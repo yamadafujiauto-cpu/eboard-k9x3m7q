@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="googlebot" content="noindex, nofollow">
+<title>営業会議ボード｜フジ自動車工業</title>
+<style>
+  :root{
+    --blue:#0095D9; --navy:#00467A; --bg:#f4f7fa; --line:#dde6ee;
+    --ink:#1d2b36; --sub:#5b6b78; --soft:#eef5fb; --gold:#e8a400;
+    --ok:#2a9d5b; --warn:#d9534f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI","Meiryo",sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;}
+  header{background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;padding:18px 20px;}
+  header h1{margin:0;font-size:20px;letter-spacing:.02em;}
+  header p{margin:4px 0 0;font-size:13px;opacity:.92;}
+  .tabs{display:flex;gap:4px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;flex-wrap:wrap;padding:0 8px;}
+  .tab{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;color:var(--sub);border-bottom:3px solid transparent;user-select:none;}
+  .tab.active{color:var(--navy);border-bottom-color:var(--blue);}
+  .wrap{max-width:880px;margin:0 auto;padding:18px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,40,80,.04);}
+  .card h2{margin:0 0 4px;font-size:16px;color:var(--navy);}
+  .card .hint{font-size:12px;color:var(--sub);margin:0 0 14px;}
+  label{display:block;font-size:12px;font-weight:600;color:var(--sub);margin:10px 0 4px;}
+  input,textarea,select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink);}
+  textarea{resize:vertical;min-height:60px;}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,149,217,.12);}
+  .row{display:flex;gap:10px;flex-wrap:wrap;}
+  .row > div{flex:1;min-width:120px;}
+  .num3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end;}
+  .num3 .col small{display:block;font-size:11px;color:var(--sub);margin-bottom:3px;text-align:center;}
+  .case{border:1px dashed var(--line);border-radius:10px;padding:10px;margin-top:10px;background:#fafdff;}
+  .case .lbl{font-size:11px;font-weight:700;color:var(--blue);margin-bottom:4px;}
+  .soudan{border:1px solid var(--gold);background:#fffaf0;border-radius:10px;padding:12px;margin-top:10px;position:relative;}
+  .soudan .star{font-weight:800;color:var(--gold);font-size:13px;margin-bottom:6px;}
+  .question{border:1px solid var(--blue);background:#f0f9ff;border-radius:10px;padding:12px;margin-top:10px;position:relative;}
+  .question .qmark{font-weight:800;color:var(--blue);font-size:13px;margin-bottom:6px;}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:700;cursor:pointer;}
+  .btn.primary{background:var(--blue);color:#fff;}
+  .btn.navy{background:var(--navy);color:#fff;}
+  .btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--blue);}
+  .btn.sm{padding:7px 12px;font-size:13px;}
+  .btn.gold{background:var(--gold);color:#fff;}
+  .btn:active{transform:translateY(1px);}
+  .btnbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+  .addlink{color:var(--blue);font-size:13px;font-weight:600;cursor:pointer;display:inline-block;margin-top:8px;}
+  .del{color:var(--warn);font-size:12px;cursor:pointer;float:right;font-weight:600;}
+  .preview{background:#0d1b27;color:#cfe6f5;border-radius:10px;padding:14px;font-family:"Consolas","Meiryo",monospace;font-size:12.5px;white-space:pre-wrap;word-break:break-word;max-height:340px;overflow:auto;}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 20px;border-radius:24px;font-size:14px;box-shadow:0 6px 20px rgba(0,40,80,.25);opacity:0;pointer-events:none;transition:.25s;z-index:50;}
+  .toast.show{opacity:1;}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:center;}
+  th{background:var(--soft);color:var(--navy);font-weight:700;}
+  .agenda-item{border-left:4px solid var(--gold);background:#fffaf0;padding:11px 14px;border-radius:0 8px 8px 0;margin-bottom:10px;}
+  .agenda-item .who{font-size:12px;color:var(--gold);font-weight:800;}
+  .agenda-item .t{font-weight:700;margin:2px 0;}
+  .agenda-item .d{font-size:13px;color:var(--sub);}
+  .clock{display:inline-block;background:var(--soft);color:var(--navy);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700;margin-right:8px;}
+  .empty{text-align:center;color:var(--sub);padding:24px;font-size:14px;}
+  .rule li{margin-bottom:8px;}
+  .rule b{color:var(--navy);}
+  .badge{display:inline-block;background:var(--soft);color:var(--navy);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;}
+  .mini{font-size:12px;color:var(--sub);}
+  @media print{
+    header,.tabs,.btnbar,.no-print{display:none!important;}
+    body{background:#fff;}
+    .card{box-shadow:none;border:1px solid #ccc;break-inside:avoid;}
+    .wrap{max-width:100%;}
+  }
+</style>
+<script>
+(function(){
+  try{ if(sessionStorage.getItem('ekb_ok')==='1') return; }catch(e){}
+  var p=prompt('パスコードを入力してください（社内用）');
+  if(p==='fuji825'){ try{sessionStorage.setItem('ekb_ok','1');}catch(e){} }
+  else { document.addEventListener('DOMContentLoaded',function(){ document.body.innerHTML='<div style="padding:40px;font-family:sans-serif;color:#00467A">このページは社内用です。再読み込みしてパスコードを入力してください。</div>'; }); }
+})();
+</script>
+</head>
+<body>
+<header>
+  <h1>📋 営業会議ボード</h1>
+  <p>報告は事前にテキストで／会議は相談だけ・15分。フジ自動車工業</p>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="report">📝 報告を書く</div>
+  <div class="tab" data-tab="agenda">📋 当日アジェンダ（司会用）</div>
+  <div class="tab" data-tab="rule">❓ 使い方・ルール</div>
+</div>
+
+<!-- ========== 報告を書く ========== -->
+<div class="wrap pane" id="pane-report">
+  <div class="card">
+    <h2>① 自分の週次報告を書く</h2>
+    <p class="hint">前日（木）17時までに記入 →「Webex用にコピー」して営業スペースに貼るだけ。入力内容はこのPCに自動保存されます。</p>
+    <div class="row">
+      <div><label>氏名</label>
+        <select id="r_name">
+          <option value="">選択してください</option>
+          <option>勝村</option>
+          <option>岩田</option>
+          <option>丹羽</option>
+          <option>三浦</option>
+          <option>山田（専務）</option>
+        </select>
+      </div>
+      <div><label>日付</label><input id="r_date" type="date"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>今週の数字</h2>
+    <p class="hint">氏名を選ぶと、担当の目標項目が出ます。<b>金額は万円</b>（エクセルの円 ÷ 1万。例：1,376,700円 → 138）。進捗は予定に対して自動計算します。</p>
+    <div id="amountBox"></div>
+    <label>今週の受注（任意・一言）</label>
+    <input id="r_juchu" placeholder="例：FL中古3台・80万 受注">
+    <label>月末の着地見込み（一言）</label>
+    <input id="r_chaku" placeholder="例：予定線。FL大口の成約次第で上振れ">
+  </div>
+
+  <div class="card">
+    <h2>案件の進捗</h2>
+    <p class="hint">今週動いた案件を書く（決まった・見積待ち・商談中など）。件数は自由に追加。</p>
+    <div id="cases"></div>
+    <span class="addlink" id="addCase">＋ 案件を追加</span>
+  </div>
+
+  <div class="card">
+    <h2>先週やったこと → 今週やること</h2>
+    <label>先週やったこと（1〜2行）</label>
+    <textarea id="r_senshu"></textarea>
+    <label>今週やること（1〜2行）</label>
+    <textarea id="r_konshu"></textarea>
+    <label>共有事項（読めば分かる連絡。会議では触れない）</label>
+    <textarea id="r_kyoyu" placeholder="例：◯◯リース担当が△△さんに交代"></textarea>
+  </div>
+
+  <div class="card">
+    <h2>★ 相談したいこと</h2>
+    <p class="hint">決めたいこと・判断してほしいこと。無ければ空のままでOK。</p>
+    <div id="soudans"></div>
+    <span class="addlink" id="addSoudan">＋ 相談を追加</span>
+  </div>
+
+  <div class="card">
+    <h2>？ 質問したいこと</h2>
+    <p class="hint">提出された報告で、聞きたいこと・確認したいこと。会議で質問タイムにまとめて扱います。無ければ空でOK。</p>
+    <div id="questions"></div>
+    <span class="addlink" id="addQuestion">＋ 質問を追加</span>
+  </div>
+
+  <div class="card no-print">
+    <h2>仕上げ</h2>
+    <div class="btnbar">
+      <button class="btn primary" id="copyReport">📋 Webex用にコピー</button>
+      <button class="btn ghost" id="printReport">🖨 印刷</button>
+      <button class="btn ghost" id="clearReport">🗑 入力をクリア</button>
+    </div>
+    <label style="margin-top:16px;">プレビュー（このままコピーされます）</label>
+    <div class="preview" id="reportPreview"></div>
+  </div>
+</div>
+
+<!-- ========== 当日アジェンダ ========== -->
+<div class="wrap pane" id="pane-agenda" style="display:none;">
+  <div class="card no-print">
+    <h2>② 5人ぶんの報告を貼る → アジェンダ自動生成</h2>
+    <p class="hint">Webexスペースの投稿を全員ぶんまとめてコピーし、下に貼って「アジェンダを作る」を押すだけ。★相談だけ拾って進行台本にします。</p>
+    <label>会議の開始時刻</label>
+    <input id="a_start" type="time" value="08:25" style="max-width:160px;">
+    <label style="margin-top:12px;">ここに全員ぶんの報告を貼り付け</label>
+    <textarea id="a_paste" style="min-height:160px;" placeholder="【営業ウィークリー】… を5人ぶん貼り付け"></textarea>
+    <div class="btnbar">
+      <button class="btn navy" id="genAgenda">⚙ アジェンダを作る</button>
+      <button class="btn ghost" id="loadMine">＋ 自分の報告も取り込む</button>
+    </div>
+  </div>
+
+  <div id="agendaOut"></div>
+</div>
+
+<!-- ========== ルール ========== -->
+<div class="wrap pane" id="pane-rule" style="display:none;">
+  <div class="card">
+    <h2>この会議の新しいやり方</h2>
+    <p class="hint">「報告は読めば済む／集まる意味は相談・決裁だけ」に振り切ります。</p>
+    <table>
+      <tr><th></th><th>今まで</th><th>これから</th></tr>
+      <tr><td><b>報告</b></td><td>会議で口頭</td><td>前日までにテキスト投稿</td></tr>
+      <tr><td><b>会議</b></td><td>報告8割＋相談2割</td><td>相談・決裁だけ／15分</td></tr>
+      <tr><td><b>時間</b></td><td>8:00開始・報告で長引く</td><td>金8:25〜8:40・質問と相談だけ15分</td></tr>
+      <tr><td><b>相談ゼロ週</b></td><td>それでも集合</td><td>会議スキップOK</td></tr>
+    </table>
+  </div>
+  <div class="card rule">
+    <h2>運用ルール</h2>
+    <ul>
+      <li><b>提出：</b>会議前日（木）17:00までに、Webex「営業会議」スペースへ各自投稿</li>
+      <li><b>読む：</b>参加者は会議前に全員ぶん目を通す（会議で読み上げない）</li>
+      <li><b>会議：</b>金 8:25〜8:40（最大15分）</li>
+      <li><b>スキップ：</b>質問も相談も無い週は会議を開かない（司会がチャットで「今週なし」）</li>
+    </ul>
+  </div>
+  <div class="card rule">
+    <h2>会議の進め方（15分）</h2>
+    <ul>
+      <li><span class="clock">0:00</span> 数字サマリー（司会が全体だけ30秒。個別報告はしない）</li>
+      <li><span class="clock">0:30</span> 相談タイム（★がついた人の分だけ・1件ずつ／状況30秒→「誰が・いつまでに」決める）</li>
+      <li><span class="clock">13:00</span> 決定事項の確認（読み上げ）</li>
+      <li><span class="clock">14:30</span> 終了（相談ゼロなら開始即終了）</li>
+    </ul>
+    <p class="mini">※ 報告の読み上げ禁止／「相談」は★に書いた人だけ／1件で長引いたら別ミーティングに切り出して会議は止めない。</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const KEY = 'ekb_report_v1';
+
+/* ---- メンバーと目標項目 ---- */
+const MEMBERS = {
+  '勝村': [{key:'hanbai', label:'販売粗利'}],
+  '岩田': [{key:'hanbai', label:'販売粗利'}],
+  '丹羽': [{key:'hanbai', label:'販売粗利'}],
+  '三浦': [{key:'hanbai', label:'販売粗利'}],
+  '山田（専務）': [{key:'hoken', label:'保険'},{key:'shahan', label:'車両販売'},{key:'kaihatsu', label:'販売（開発営業）'}],
+};
+function renderAmounts(name){
+  const box=$('#amountBox'); if(!box)return;
+  const items=MEMBERS[name]||[];
+  if(!items.length){ box.innerHTML='<p class="mini" style="color:var(--sub);margin:4px 0 0;">↑ 氏名を選ぶと、担当の目標項目が表示されます。</p>'; return; }
+  box.innerHTML=items.map(it=>
+    '<label>'+it.label+'（万円）　月の予定 / 現時点の実績</label>'
+    +'<div class="num3">'
+    +'<div class="col"><small>予定</small><input class="amt_t" data-key="'+it.key+'" inputmode="decimal"></div>'
+    +'<div class="col"><small>実績</small><input class="amt_a" data-key="'+it.key+'" inputmode="decimal"></div>'
+    +'<div class="col"><small>進捗</small><input class="amt_p" data-key="'+it.key+'" readonly placeholder="自動"></div>'
+    +'</div>'
+  ).join('');
+}
+
+/* ---- タブ ---- */
+$$('.tab').forEach(t=>t.onclick=()=>{
+  $$('.tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  $$('.pane').forEach(p=>p.style.display='none');
+  $('#pane-'+t.dataset.tab).style.display='block';
+  window.scrollTo(0,0);
+});
+
+/* ---- トースト ---- */
+let toastT;
+function toast(msg){
+  const el=$('#toast'); el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),1800);
+}
+
+/* ---- 案件カード ---- */
+function caseHTML(i){
+  return `<div class="case" data-i="${i}">
+    <span class="del" onclick="this.parentNode.remove();save();render()">削除</span>
+    <div class="lbl">案件 ${i+1}</div>
+    <div class="row">
+      <div><label>顧客</label><input class="c_kokyaku"></div>
+      <div><label>区分</label><select class="c_kubun"><option>FL販売</option><option>レンタル</option><option>メンテ・点検</option><option>リース</option><option>車両販売</option><option>保険</option><option>その他</option></select></div>
+    </div>
+    <label>内容</label><input class="c_shozai" placeholder="例：リーチ3m中古／火災保険 見積／タイヤ交換">
+    <div class="row">
+      <div><label>金額</label><input class="c_kingaku"></div>
+      <div><label>状況</label><select class="c_status"><option>商談中</option><option>見積待ち</option><option>決まった</option><option>納車・施工待ち</option><option>フォロー中</option></select></div>
+    </div>
+    <label>次の一手</label><input class="c_tsugi">
+  </div>`;
+}
+function soudanHTML(i){
+  return `<div class="soudan">
+    <span class="del" onclick="this.parentNode.remove();save();render()">削除</span>
+    <div class="star">★ 相談 ${i+1}</div>
+    <label>テーマ</label><input class="s_tema" placeholder="例：◯◯社の値引き判断">
+    <label>何を決めたいか</label><input class="s_kimetai">
+    <label>自分の案</label><input class="s_an">
+  </div>`;
+}
+function questionHTML(i){
+  return `<div class="question">
+    <span class="del" onclick="this.parentNode.remove();save();render()">削除</span>
+    <div class="qmark">？ 質問 ${i+1}</div>
+    <label>聞きたいこと・確認したいこと</label><input class="q_naiyo" placeholder="例：◯◯社の納期、いつ確定？">
+    <label>誰の何について（任意）</label><input class="q_ate" placeholder="例：勝村さんのA案件">
+  </div>`;
+}
+$('#addCase').onclick=()=>{const n=$$('#cases .case').length; $('#cases').insertAdjacentHTML('beforeend',caseHTML(n)); bindInputs(); save();};
+$('#addSoudan').onclick=()=>{const n=$$('#soudans .soudan').length; $('#soudans').insertAdjacentHTML('beforeend',soudanHTML(n)); bindInputs(); save();};
+$('#addQuestion').onclick=()=>{const n=$$('#questions .question').length; $('#questions').insertAdjacentHTML('beforeend',questionHTML(n)); bindInputs(); save();};
+
+/* ---- 収集 ---- */
+function gather(){
+  const cases=[...$$('#cases .case')].map(c=>({
+    kokyaku:c.querySelector('.c_kokyaku').value.trim(),
+    kubun:c.querySelector('.c_kubun').value,
+    shozai:c.querySelector('.c_shozai').value.trim(),
+    kingaku:c.querySelector('.c_kingaku').value.trim(),
+    status:c.querySelector('.c_status').value,
+    tsugi:c.querySelector('.c_tsugi').value.trim(),
+  })).filter(c=>c.kokyaku||c.shozai||c.kingaku||c.tsugi);
+  const soudans=[...$$('#soudans .soudan')].map(s=>({
+    tema:s.querySelector('.s_tema').value.trim(),
+    kimetai:s.querySelector('.s_kimetai').value.trim(),
+    an:s.querySelector('.s_an').value.trim(),
+  })).filter(s=>s.tema||s.kimetai||s.an);
+  const questions=[...$$('#questions .question')].map(q=>({
+    naiyo:q.querySelector('.q_naiyo').value.trim(),
+    ate:q.querySelector('.q_ate').value.trim(),
+  })).filter(q=>q.naiyo||q.ate);
+  const _nm=$('#r_name').value.trim();
+  const _amounts=(MEMBERS[_nm]||[]).map(it=>({
+    key:it.key, label:it.label,
+    t:(($('#amountBox .amt_t[data-key="'+it.key+'"]')||{}).value||'').trim(),
+    a:(($('#amountBox .amt_a[data-key="'+it.key+'"]')||{}).value||'').trim(),
+  }));
+  return {
+    name:_nm, date:$('#r_date').value,
+    amounts:_amounts,
+    juchu:$('#r_juchu').value.trim(),
+    chaku:$('#r_chaku').value.trim(), senshu:$('#r_senshu').value.trim(),
+    konshu:$('#r_konshu').value.trim(), kyoyu:$('#r_kyoyu').value.trim(),
+    cases, soudans, questions,
+  };
+}
+
+/* ---- 数字ヘルパー ---- */
+function num(v){ const n=parseFloat(String(v==null?'':v).replace(/[,，\s]/g,'')); return isNaN(n)?NaN:n; }
+function pct(t,a){ const T=num(t),A=num(a); if(isNaN(T)||T===0||isNaN(A))return '-'; return Math.round(A/T*100)+'%'; }
+function updatePct(){
+  $$('#amountBox .num3').forEach(box=>{
+    const t=box.querySelector('.amt_t'), a=box.querySelector('.amt_a'), p=box.querySelector('.amt_p');
+    if(t&&a&&p) p.value=pct(t.value,a.value);
+  });
+}
+function fmtN(v){ const n=num(v); return isNaN(n)?'-':n.toLocaleString(); }
+function fmtNum(n){ return (isNaN(n)?0:n).toLocaleString(); }
+function pctCell(t,a){ const T=num(t),A=num(a); if(isNaN(T)||T===0||isNaN(A))return '<td>-</td>'; const p=Math.round(A/T*100); const c=p>=100?'var(--ok)':(p>=80?'var(--gold)':'var(--warn)'); return '<td style="color:'+c+';font-weight:700">'+p+'%</td>'; }
+function buildSummaryTable(reports){
+  let rows='';
+  reports.forEach(r=>{
+    const items=r.amounts||[];
+    if(!items.length){
+      rows+='<tr><td style="text-align:left">'+escapeHtml(r.name)+'</td><td colspan="4" style="text-align:left;color:var(--sub)">数字なし</td></tr>';
+    }else{
+      items.forEach((x,idx)=>{
+        rows+='<tr>'
+          +(idx===0?'<td style="text-align:left;vertical-align:middle" rowspan="'+items.length+'">'+escapeHtml(r.name)+'</td>':'')
+          +'<td style="text-align:left">'+escapeHtml(x.label)+'</td>'
+          +'<td>'+fmtN(x.t)+'</td><td>'+fmtN(x.a)+'</td>'+pctCell(x.t,x.a)+'</tr>';
+      });
+    }
+  });
+  return '<div class="card"><h2>📊 目標の進捗サマリー</h2>'
+    +'<p class="hint">各自の報告から自動集計（当月の予定に対する進捗・万円）。緑=100%以上／黄=80%以上／赤=未満。</p>'
+    +'<table><tr><th>担当</th><th>項目</th><th>予定</th><th>実績</th><th>進捗</th></tr>'
+    +rows+'</table></div>';
+}
+
+/* ---- テキスト整形 ---- */
+function buildText(d){
+  let L=[];
+  L.push('【営業ウィークリー】　'+(d.name||'（氏名）')+'　'+(d.date||''));
+  L.push('');
+  L.push('■ 数字（当月の進捗・単位：万円）');
+  if(d.amounts&&d.amounts.length){
+    d.amounts.forEach(x=>{
+      L.push('　'+x.label+'：予定 '+(x.t||'-')+' / 実績 '+(x.a||'-')+' （'+pct(x.t,x.a)+'）');
+    });
+  }else{
+    L.push('　（氏名未選択）');
+  }
+  if(d.juchu) L.push('　今週の受注：'+d.juchu);
+  if(d.chaku) L.push('　着地見込み：'+d.chaku);
+  L.push('');
+  if(d.cases.length){
+    L.push('■ 案件の進捗');
+    d.cases.forEach((c,i)=>{
+      L.push('　'+(i+1)+'. '+[c.kokyaku,c.kubun,c.shozai,c.kingaku,c.status,(c.tsugi?'→'+c.tsugi:'')].filter(Boolean).join(' / '));
+    });
+    L.push('');
+  }
+  if(d.senshu||d.konshu){
+    L.push('■ 先週 → 今週');
+    if(d.senshu) L.push('　先週：'+d.senshu);
+    if(d.konshu) L.push('　今週：'+d.konshu);
+    L.push('');
+  }
+  if(d.kyoyu){ L.push('■ 共有（会議では触れない）'); L.push('　'+d.kyoyu); L.push(''); }
+  if(d.questions&&d.questions.length){
+    d.questions.forEach(q=>{
+      L.push('？質問：'+(q.naiyo||'（未記入）')+(q.ate?'（'+q.ate+'）':''));
+    });
+  }else{
+    L.push('？質問：なし');
+  }
+  if(d.soudans.length){
+    d.soudans.forEach(s=>{
+      L.push('★相談：'+(s.tema||'（テーマ未記入）'));
+      if(s.kimetai) L.push('　決めたいこと：'+s.kimetai);
+      if(s.an) L.push('　自分の案：'+s.an);
+    });
+  }else{
+    L.push('★相談：なし');
+  }
+  return L.join('\n');
+}
+
+/* ---- 保存・復元・描画 ---- */
+function save(){ localStorage.setItem(KEY, JSON.stringify(gather())); render(); }
+function render(){ updatePct(); $('#reportPreview').textContent = buildText(gather()); }
+function bindInputs(){
+  $$('#pane-report input,#pane-report textarea,#pane-report select').forEach(el=>{
+    el.oninput=save; el.onchange=save;
+  });
+  const nm=$('#r_name');
+  if(nm) nm.onchange=()=>{ renderAmounts(nm.value); bindInputs(); save(); };
+}
+function restore(){
+  const raw=localStorage.getItem(KEY); if(!raw){ $('#cases').innerHTML=caseHTML(0); $('#soudans').innerHTML=soudanHTML(0); $('#questions').innerHTML=questionHTML(0); renderAmounts(''); bindInputs(); render(); return; }
+  const d=JSON.parse(raw);
+  $('#r_name').value=d.name||''; $('#r_date').value=d.date||'';
+  renderAmounts(d.name||'');
+  (d.amounts||[]).forEach(x=>{
+    const tEl=$('#amountBox .amt_t[data-key="'+x.key+'"]'); if(tEl)tEl.value=x.t||'';
+    const aEl=$('#amountBox .amt_a[data-key="'+x.key+'"]'); if(aEl)aEl.value=x.a||'';
+  });
+  $('#r_juchu').value=d.juchu||'';
+  $('#r_chaku').value=d.chaku||''; $('#r_senshu').value=d.senshu||''; $('#r_konshu').value=d.konshu||''; $('#r_kyoyu').value=d.kyoyu||'';
+  $('#cases').innerHTML = (d.cases&&d.cases.length?d.cases:[{}]).map((c,i)=>caseHTML(i)).join('');
+  (d.cases||[]).forEach((c,i)=>{const el=$$('#cases .case')[i]; if(!el)return;
+    el.querySelector('.c_kokyaku').value=c.kokyaku||'';
+    if(c.kubun) el.querySelector('.c_kubun').value=c.kubun;
+    el.querySelector('.c_shozai').value=c.shozai||'';
+    el.querySelector('.c_kingaku').value=c.kingaku||'';
+    if(c.status) el.querySelector('.c_status').value=c.status;
+    el.querySelector('.c_tsugi').value=c.tsugi||'';
+  });
+  $('#soudans').innerHTML = (d.soudans&&d.soudans.length?d.soudans:[{}]).map((s,i)=>soudanHTML(i)).join('');
+  (d.soudans||[]).forEach((s,i)=>{const el=$$('#soudans .soudan')[i]; if(!el)return;
+    el.querySelector('.s_tema').value=s.tema||''; el.querySelector('.s_kimetai').value=s.kimetai||''; el.querySelector('.s_an').value=s.an||'';
+  });
+  $('#questions').innerHTML = (d.questions&&d.questions.length?d.questions:[{}]).map((q,i)=>questionHTML(i)).join('');
+  (d.questions||[]).forEach((q,i)=>{const el=$$('#questions .question')[i]; if(!el)return;
+    el.querySelector('.q_naiyo').value=q.naiyo||''; el.querySelector('.q_ate').value=q.ate||'';
+  });
+  bindInputs(); render();
+}
+
+/* ---- ボタン ---- */
+$('#copyReport').onclick=async()=>{
+  const t=buildText(gather());
+  try{ await navigator.clipboard.writeText(t); toast('コピーしました。Webexに貼ってください'); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('コピーしました'); }
+};
+$('#printReport').onclick=()=>window.print();
+$('#clearReport').onclick=()=>{ if(confirm('入力をすべて消します。よろしいですか？')){ localStorage.removeItem(KEY); location.reload(); } };
+
+/* ---- アジェンダ生成 ---- */
+$('#loadMine').onclick=()=>{
+  const t=buildText(gather());
+  const cur=$('#a_paste').value.trim();
+  $('#a_paste').value = cur ? cur+'\n\n'+t : t;
+  toast('自分の報告を取り込みました');
+};
+function parseReports(text){
+  // 「【営業ウィークリー】」で各人ブロックに分割
+  const blocks = text.split(/(?=【営業ウィークリー】)/).map(b=>b.trim()).filter(Boolean);
+  return blocks.map(b=>{
+    const head = (b.split('\n')[0]||'').replace('【営業ウィークリー】','').trim();
+    const name = head.split(/[\s　]/).filter(Boolean)[0] || '（不明）';
+    // ★相談・数字 抽出のため行分割
+    const lines = b.split('\n');
+    // 数字（目標項目）抽出：項目名は可変
+    const amounts=[];
+    lines.forEach(l=>{
+      const am=l.match(/^[\s　]*(.+?)[：:]\s*予定\s*([0-9.,，\-]+)\s*\/\s*実績\s*([0-9.,，\-]+)/);
+      if(am){ amounts.push({label:am[1].trim(), t:am[2], a:am[3]}); }
+    });
+    const soudans=[]; let cur=null;
+    lines.forEach(l=>{
+      const m=l.match(/^[\s　]*★相談[：:]\s*(.*)$/);
+      if(m){
+        const t=m[1].trim();
+        if(t && t!=='なし'){ cur={tema:t, detail:[]}; soudans.push(cur); }
+        else { cur=null; }
+      }else if(cur && l.trim() && /^[\s　]*(決めたいこと|自分の案)/.test(l)){
+        cur.detail.push(l.trim());
+      }
+    });
+    // ？質問 抽出
+    const questions=[];
+    lines.forEach(l=>{
+      const qm=l.match(/^[\s　]*？質問[：:]\s*(.*)$/);
+      if(qm){ const t=qm[1].trim(); if(t && t!=='なし') questions.push(t); }
+    });
+    return {name, amounts, soudans, questions};
+  });
+}
+function fmtTime(start, addMin){
+  const [h,m]=start.split(':').map(Number);
+  const total=h*60+m+addMin;
+  const hh=String(Math.floor(total/60)%24).padStart(2,'0');
+  const mm=String(total%60).padStart(2,'0');
+  return hh+':'+mm;
+}
+$('#genAgenda').onclick=()=>{
+  const text=$('#a_paste').value.trim();
+  const out=$('#agendaOut');
+  if(!text){ out.innerHTML='<div class="card"><div class="empty">まず報告を貼り付けてください。</div></div>'; return; }
+  const reports=parseReports(text);
+  // 提出状況（未提出者の見える化）
+  const submitted=reports.map(r=>r.name);
+  const allMembers=Object.keys(MEMBERS);
+  const notSubmitted=allMembers.filter(m=>!submitted.includes(m));
+  const subList=submitted.length?submitted.join('・'):'なし';
+  let statusHtml='<div class="card"><h2>🧾 提出状況（'+reports.length+'/'+allMembers.length+'）</h2>'
+    +'<p class="mini" style="margin:2px 0">提出済み：'+escapeHtml(subList)+'</p>';
+  if(notSubmitted.length){
+    statusHtml+='<p style="color:var(--warn);font-weight:700;margin:6px 0">未提出：'+escapeHtml(notSubmitted.join('・'))+'</p>'
+      +'<button class="btn ghost sm no-print" onclick="copyReminder(\''+notSubmitted.join('・')+'\')">📋 未提出者への督促文をコピー</button>';
+  }else{
+    statusHtml+='<p style="color:var(--ok);font-weight:700;margin:6px 0">✅ 全員提出済み</p>';
+  }
+  statusHtml+='</div>';
+  const allQ=[];
+  reports.forEach(r=>(r.questions||[]).forEach(q=>allQ.push({name:r.name, q})));
+  const allSoudan=[];
+  reports.forEach(r=>r.soudans.forEach(s=>allSoudan.push({name:r.name, ...s})));
+  const start=$('#a_start').value||'08:25';
+  const end=fmtTime(start,15);
+
+  // Webex投稿用テキスト版アジェンダを組み立て
+  const A=[];
+  A.push('■ 営業会議 '+start+'〜'+end+'（15分）');
+  A.push('');
+  A.push('【提出状況】'+reports.length+'/'+allMembers.length);
+  A.push('提出済み：'+subList);
+  if(notSubmitted.length) A.push('未提出：'+notSubmitted.join('・'));
+  A.push('');
+  A.push('【数字の進捗（万円）】');
+  reports.forEach(r=>{
+    (r.amounts||[]).forEach(x=>A.push('・'+r.name+' '+x.label+'：予定'+(x.t||'-')+'/実績'+(x.a||'-')+'（'+pct(x.t,x.a)+'）'));
+  });
+  if(allQ.length){ A.push(''); A.push('【？質問（その場で回答）】'); allQ.forEach(it=>A.push('・'+it.name+'：'+it.q)); }
+  if(allSoudan.length){ A.push(''); A.push('【★相談（決める）】'); allSoudan.forEach(s=>A.push('・'+s.name+'：'+s.tema)); }
+  if(allQ.length===0&&allSoudan.length===0){ A.push(''); A.push('※今週は質問・相談なし。数字の確認のみ。'); }
+  _agendaText = A.join('\n');
+
+  // 先頭に提出状況＋販売粗利サマリー表
+  let html = statusHtml + buildSummaryTable(reports);
+
+  html+=`<div class="card">
+    <h2>📋 当日アジェンダ（${start}〜${end}・15分）</h2>
+    <p class="hint">参加 ${reports.length} 名／質問 ${allQ.length} 件・相談 ${allSoudan.length} 件。報告は事前に各自で読了済み前提。</p>`;
+
+  html+=`<div class="agenda-item" style="border-left-color:var(--blue);background:var(--soft);">
+    <span class="clock">${fmtTime(start,0)}</span>
+    <div class="t">販売粗利サマリーを確認（上の表・司会が全体だけ30秒）</div>
+    <div class="d">進捗が遅れている人（赤）だけ一言。個別の報告読み上げはしない。</div></div>`;
+
+  if(allQ.length===0 && allSoudan.length===0){
+    html+=`<div class="agenda-item" style="border-left-color:var(--ok);background:#eefaf2;">
+      <div class="t">✅ 今週は質問・相談ゼロ → 数字を確認したら解散でOK</div>
+      <div class="d">何も無い週は会議自体を省略しても可（司会が営業会議グループで「今週はなし。各自の報告に目を通しておいてください」と連絡）。</div>
+    </div></div>`;
+    html+=`<div class="btnbar no-print"><button class="btn navy" onclick="copyAgenda()">📋 アジェンダをコピー（Webex用）</button><button class="btn gold" onclick="window.print()">🖨 印刷 / PDF</button></div>`;
+    out.innerHTML=html; toast('質問・相談ゼロ：数字確認のみ'); window.scrollTo(0,document.body.scrollHeight); return;
+  }
+
+  // 時間配分：サマリー30秒 + 確認1.5分(末尾) を除いた残りを件数で按分
+  const n = allQ.length + allSoudan.length;
+  const talkBudget = 15 - 0.5 - 1.5; // 13分
+  const per = talkBudget/n;
+  let cursor=0.5;
+
+  if(allQ.length){
+    html+=`<div class="agenda-item" style="border-left-color:var(--blue);background:#f0f9ff;padding:8px 14px;">
+      <div class="t" style="color:var(--blue)">？ 質問タイム（その場で回答）</div></div>`;
+    allQ.forEach(item=>{
+      const at=fmtTime(start, Math.round(cursor)); cursor+=per;
+      html+=`<div class="agenda-item" style="border-left-color:var(--blue);">
+        <span class="clock">${at}</span>
+        <span class="who" style="color:var(--blue)">？ ${escapeHtml(item.name)}</span>
+        <div class="t">${escapeHtml(item.q)}</div>
+        <div class="d" style="margin-top:4px;color:var(--navy);">→ その場で回答</div>
+      </div>`;
+    });
+  }
+
+  if(allSoudan.length){
+    html+=`<div class="agenda-item" style="border-left-color:var(--gold);background:#fffaf0;padding:8px 14px;">
+      <div class="t" style="color:var(--gold)">★ 相談タイム（決める）</div></div>`;
+    allSoudan.forEach((s)=>{
+      const at=fmtTime(start, Math.round(cursor)); cursor+=per;
+      html+=`<div class="agenda-item">
+        <span class="clock">${at}</span>
+        <span class="who">★ ${escapeHtml(s.name)}</span>
+        <div class="t">${escapeHtml(s.tema)}</div>
+        ${s.detail.length?'<div class="d">'+s.detail.map(escapeHtml).join('<br>')+'</div>':''}
+        <div class="d" style="margin-top:6px;color:var(--navy);">→ 決定：　誰が（　　　）／ いつまで（　　　）</div>
+      </div>`;
+    });
+  }
+
+  html+=`<div class="agenda-item" style="border-left-color:var(--navy);background:#eef5fb;">
+    <span class="clock">${fmtTime(start,13)}</span>
+    <div class="t">決定事項の確認（読み上げ）→ 終了</div></div>`;
+
+  html+=`<div class="btnbar no-print">
+      <button class="btn navy" onclick="copyAgenda()">📋 アジェンダをコピー（Webex用）</button>
+      <button class="btn gold" onclick="window.print()">🖨 印刷 / PDF</button>
+    </div></div>`;
+  out.innerHTML=html;
+  toast('アジェンダを作りました');
+  window.scrollTo(0,document.body.scrollHeight);
+};
+function escapeHtml(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function fallbackCopy(t){ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+function copyReminder(names){
+  const t='【提出のお願い】\n営業ウィークリー（営業会議の報告）の提出をお願いします。\n締切：木曜17:00まで ／ 未提出：'+names+'\n相談・質問が無ければ、数字だけでもOKです（3分で終わります）。';
+  const done=()=>toast('督促文をコピーしました');
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done).catch(()=>{fallbackCopy(t);done();}); }
+  else { fallbackCopy(t); done(); }
+}
+let _agendaText='';
+function copyAgenda(){
+  if(!_agendaText){ toast('先にアジェンダを作ってください'); return; }
+  const done=()=>toast('アジェンダをコピーしました。send_webex.bat で送れます');
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(_agendaText).then(done).catch(()=>{fallbackCopy(_agendaText);done();}); }
+  else { fallbackCopy(_agendaText); done(); }
+}
+
+/* ---- 初期化 ---- */
+restore();
+if(!$('#r_date').value){ /* 今日を入れない（Date制限）— 手入力で */ }
+</script>
+</body>
+</html>
