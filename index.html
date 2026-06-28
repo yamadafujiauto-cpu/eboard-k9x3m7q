@@ -71,14 +71,6 @@
     .wrap{max-width:100%;}
   }
 </style>
-<script>
-(function(){
-  try{ if(sessionStorage.getItem('ekb_ok')==='1') return; }catch(e){}
-  var p=prompt('パスコードを入力してください（社内用）');
-  if(p==='fuji825'){ try{sessionStorage.setItem('ekb_ok','1');}catch(e){} }
-  else { document.addEventListener('DOMContentLoaded',function(){ document.body.innerHTML='<div style="padding:40px;font-family:sans-serif;color:#00467A">このページは社内用です。再読み込みしてパスコードを入力してください。</div>'; }); }
-})();
-</script>
 </head>
 <body>
 <header>
