@@ -64,6 +64,10 @@
   .rule b{color:var(--navy);}
   .badge{display:inline-block;background:var(--soft);color:var(--navy);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;}
   .mini{font-size:12px;color:var(--sub);}
+  #kimariBox{display:none;background:var(--soft);border-radius:8px;padding:8px 12px;margin-top:8px;font-size:12.5px;color:var(--navy);}
+  #yoteiHint{display:none;color:var(--warn);font-size:12px;margin-top:6px;}
+  .yen{font-size:10.5px;color:var(--sub);min-height:13px;text-align:center;}
+  .c_yen{font-size:10.5px;color:var(--sub);min-height:13px;}
   @media print{
     header,.tabs,.btnbar,.no-print{display:none!important;}
     body{background:#fff;}
@@ -106,12 +110,14 @@
 
   <div class="card">
     <h2>今週の数字</h2>
-    <p class="hint">氏名を選ぶと、担当の目標項目が出ます。<b>金額は万円</b>（エクセルの円 ÷ 1万。例：1,376,700円 → 138）。進捗は予定に対して自動計算します。</p>
+    <p class="hint">氏名を選ぶと、担当の目標項目が出ます。<b>金額はすべて粗利・万円</b>（例：626,000円 → 62.6）。<b>実績＝今月ここまでに「決まった」粗利の合計</b>（受注ベース。下の自動計算が参考になります）。予定（月目標）は月に1回入れれば、翌週からは自動で入ります。</p>
     <div id="amountBox"></div>
+    <div id="kimariBox"></div>
+    <div id="yoteiHint">※ 予定（今月の目標・万円）が未入力です。月初に共有される数字を1回入れてください（翌週からは自動で入ります）。</div>
     <label>今週の受注（任意・一言）</label>
-    <input id="r_juchu" placeholder="例：FL中古3台・80万 受注">
+    <input id="r_juchu" placeholder="例：FL中古1台 粗利62.6（売上626）">
     <label>月末の着地見込み（一言）</label>
-    <input id="r_chaku" placeholder="例：予定線。FL大口の成約次第で上振れ">
+    <input id="r_chaku" placeholder="例：FL7台・粗利◯◯万円見込み（台数だけでもOK）">
   </div>
 
   <div class="card">
@@ -191,6 +197,8 @@
   <div class="card rule">
     <h2>運用ルール</h2>
     <ul>
+      <li><b>数字：</b>金額はすべて<b>粗利・万円</b>で統一（売上を書きたいときは案件の内容欄にカッコ書き）。実績＝今月「決まった」粗利の合計（受注ベース）</li>
+      <li><b>予定（月目標）：</b>月初に専務がWebexで各自の予定粗利（万円）を配る → 各自が月1回入力（翌週からは自動で入る）</li>
       <li><b>提出：</b>会議前日（木）17:00までに、Webex「営業会議」スペースへ各自投稿</li>
       <li><b>読む：</b>参加者は会議前に全員ぶん目を通す（会議で読み上げない）</li>
       <li><b>会議：</b>金 8:25〜8:40（最大15分）</li>
@@ -215,6 +223,24 @@
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 const KEY = 'ekb_report_v1';
+const NKEY = 'ekb_name_v1';
+const YKEY = 'ekb_yotei_v1';
+
+/* ---- 月キーと予定（月目標）の保持 ---- */
+function monthKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function loadYotei(name){
+  if(!name) return {};
+  try{ const all=JSON.parse(localStorage.getItem(YKEY)||'{}'); return all[name+'|'+monthKey()]||{}; }catch(e){ return {}; }
+}
+function saveYotei(name, amounts){
+  if(!name) return;
+  try{
+    const all=JSON.parse(localStorage.getItem(YKEY)||'{}');
+    const o={}; (amounts||[]).forEach(x=>{ if(x.t) o[x.key]=x.t; });
+    all[name+'|'+monthKey()]=o;
+    localStorage.setItem(YKEY, JSON.stringify(all));
+  }catch(e){}
+}
 
 /* ---- メンバーと目標項目 ---- */
 const MEMBERS = {
@@ -229,13 +255,15 @@ function renderAmounts(name){
   const items=MEMBERS[name]||[];
   if(!items.length){ box.innerHTML='<p class="mini" style="color:var(--sub);margin:4px 0 0;">↑ 氏名を選ぶと、担当の目標項目が表示されます。</p>'; return; }
   box.innerHTML=items.map(it=>
-    '<label>'+it.label+'（万円）　月の予定 / 現時点の実績</label>'
+    '<label>'+it.label+'（粗利・万円）　月の予定 / 現時点の実績</label>'
     +'<div class="num3">'
-    +'<div class="col"><small>予定</small><input class="amt_t" data-key="'+it.key+'" inputmode="decimal"></div>'
-    +'<div class="col"><small>実績</small><input class="amt_a" data-key="'+it.key+'" inputmode="decimal"></div>'
-    +'<div class="col"><small>進捗</small><input class="amt_p" data-key="'+it.key+'" readonly placeholder="自動"></div>'
+    +'<div class="col"><small>予定</small><input class="amt_t" data-key="'+it.key+'" inputmode="decimal"><div class="yen"></div></div>'
+    +'<div class="col"><small>実績</small><input class="amt_a" data-key="'+it.key+'" inputmode="decimal"><div class="yen"></div></div>'
+    +'<div class="col"><small>進捗</small><input class="amt_p" data-key="'+it.key+'" readonly placeholder="自動"><div class="yen"></div></div>'
     +'</div>'
   ).join('');
+  const y=loadYotei(name);
+  items.forEach(it=>{ const el=box.querySelector('.amt_t[data-key="'+it.key+'"]'); if(el&&!el.value&&y[it.key]!=null) el.value=y[it.key]; });
 }
 
 /* ---- タブ ---- */
@@ -262,10 +290,11 @@ function caseHTML(i){
     <div class="row">
       <div><label>顧客</label><input class="c_kokyaku"></div>
       <div><label>区分</label><select class="c_kubun"><option>FL販売</option><option>レンタル</option><option>メンテ・点検</option><option>リース</option><option>車両販売</option><option>保険</option><option>その他</option></select></div>
+      <div><label>きっかけ（任意）</label><select class="c_kikkake"><option value=""></option><option>テレアポ</option><option>フリーダイヤル</option><option>既存客</option><option>紹介</option><option>飛び込み</option><option>その他</option></select></div>
     </div>
-    <label>内容</label><input class="c_shozai" placeholder="例：リーチ3m中古／火災保険 見積／タイヤ交換">
+    <label>内容</label><input class="c_shozai" placeholder="例：リーチ3m中古／タイヤ交換（売上額があれば内容にカッコ書き）">
     <div class="row">
-      <div><label>金額</label><input class="c_kingaku"></div>
+      <div><label>粗利（万円）</label><input class="c_kingaku" inputmode="decimal" placeholder="例：62.6"><div class="c_yen"></div></div>
       <div><label>状況</label><select class="c_status"><option>商談中</option><option>見積待ち</option><option>決まった</option><option>納車・施工待ち</option><option>フォロー中</option></select></div>
     </div>
     <label>次の一手</label><input class="c_tsugi">
@@ -297,6 +326,7 @@ function gather(){
   const cases=[...$$('#cases .case')].map(c=>({
     kokyaku:c.querySelector('.c_kokyaku').value.trim(),
     kubun:c.querySelector('.c_kubun').value,
+    kikkake:(c.querySelector('.c_kikkake')||{value:''}).value,
     shozai:c.querySelector('.c_shozai').value.trim(),
     kingaku:c.querySelector('.c_kingaku').value.trim(),
     status:c.querySelector('.c_status').value,
@@ -337,26 +367,56 @@ function updatePct(){
   });
 }
 function fmtN(v){ const n=num(v); return isNaN(n)?'-':n.toLocaleString(); }
+function kimariCalc(cases){
+  const list=(cases||[]).filter(c=>c.status==='決まった'||c.status==='納車・施工待ち');
+  const sum=Math.round(list.reduce((s,c)=>{ const n=num(c.kingaku); return s+(isNaN(n)?0:n); },0)*10)/10;
+  return {count:list.length, sum};
+}
+function yenTxt(v){ const n=num(v); return isNaN(n)?'':'＝ '+Math.round(n*10000).toLocaleString()+'円'; }
+function updateYen(){
+  $$('#cases .case').forEach(c=>{ const i=c.querySelector('.c_kingaku'), y=c.querySelector('.c_yen'); if(i&&y) y.textContent=yenTxt(i.value); });
+  $$('#amountBox .col').forEach(col=>{ const i=col.querySelector('.amt_t')||col.querySelector('.amt_a'); const y=col.querySelector('.yen'); if(i&&y) y.textContent=yenTxt(i.value); });
+}
+function updateKimari(d){
+  const box=$('#kimariBox'); if(!box)return;
+  const km=kimariCalc(d.cases);
+  if(km.count){ box.style.display='block'; box.innerHTML='📌 参考（自動計算）：「決まった」案件の粗利合計 <b>'+km.sum.toLocaleString()+'万円（'+km.count+'件）</b>。実績欄はこの数字を参考に入れてください。'; }
+  else{ box.style.display='none'; }
+}
+function updateYoteiHint(){
+  const el=$('#yoteiHint'); if(!el)return;
+  const name=$('#r_name').value;
+  const inputs=[...$$('#amountBox .amt_t')];
+  el.style.display=(name && inputs.length && inputs.some(i=>!i.value.trim()))?'block':'none';
+}
 function fmtNum(n){ return (isNaN(n)?0:n).toLocaleString(); }
 function pctCell(t,a){ const T=num(t),A=num(a); if(isNaN(T)||T===0||isNaN(A))return '<td>-</td>'; const p=Math.round(A/T*100); const c=p>=100?'var(--ok)':(p>=80?'var(--gold)':'var(--warn)'); return '<td style="color:'+c+';font-weight:700">'+p+'%</td>'; }
 function buildSummaryTable(reports){
   let rows='';
   reports.forEach(r=>{
     const items=r.amounts||[];
+    const span=Math.max(items.length,1);
+    const kmCell='<td rowspan="'+span+'" style="vertical-align:middle">'
+      +(r.kimari?escapeHtml(r.kimari.sum)+'万<span class="mini">（'+escapeHtml(r.kimari.count)+'件）</span>':'-')+'</td>';
     if(!items.length){
-      rows+='<tr><td style="text-align:left">'+escapeHtml(r.name)+'</td><td colspan="4" style="text-align:left;color:var(--sub)">数字なし</td></tr>';
+      rows+='<tr><td style="text-align:left">'+escapeHtml(r.name)+'</td><td colspan="4" style="text-align:left;color:var(--sub)">数字なし</td>'+kmCell+'</tr>';
     }else{
       items.forEach((x,idx)=>{
+        const tCell=isNaN(num(x.t))?'<td style="color:var(--warn);font-weight:700">未入力</td>':'<td>'+fmtN(x.t)+'</td>';
+        const K=r.kimari?num(r.kimari.sum):NaN;
+        const A=num(x.a);
+        const warn=(idx===0&&!isNaN(K)&&K>0&&(isNaN(A)||A<K))?' <span title="決まり合計より実績が小さい（未反映の可能性）" style="color:var(--gold);font-weight:700">⚠</span>':'';
         rows+='<tr>'
-          +(idx===0?'<td style="text-align:left;vertical-align:middle" rowspan="'+items.length+'">'+escapeHtml(r.name)+'</td>':'')
+          +(idx===0?'<td style="text-align:left;vertical-align:middle" rowspan="'+span+'">'+escapeHtml(r.name)+'</td>':'')
           +'<td style="text-align:left">'+escapeHtml(x.label)+'</td>'
-          +'<td>'+fmtN(x.t)+'</td><td>'+fmtN(x.a)+'</td>'+pctCell(x.t,x.a)+'</tr>';
+          +tCell+'<td>'+fmtN(x.a)+warn+'</td>'+pctCell(x.t,x.a)
+          +(idx===0?kmCell:'')+'</tr>';
       });
     }
   });
   return '<div class="card"><h2>📊 目標の進捗サマリー</h2>'
-    +'<p class="hint">各自の報告から自動集計（当月の予定に対する進捗・万円）。緑=100%以上／黄=80%以上／赤=未満。</p>'
-    +'<table><tr><th>担当</th><th>項目</th><th>予定</th><th>実績</th><th>進捗</th></tr>'
+    +'<p class="hint">各自の報告から自動集計（当月の予定に対する進捗・粗利・万円）。緑=100%以上／黄=80%以上／赤=未満。「決まり」＝報告内で「決まった」案件の粗利合計（自動）。⚠＝実績が決まり合計より小さい（実績欄が未更新の可能性）。</p>'
+    +'<table><tr><th>担当</th><th>項目</th><th>予定</th><th>実績</th><th>進捗</th><th>決まり(自動)</th></tr>'
     +rows+'</table></div>';
 }
 
@@ -373,23 +433,25 @@ function buildText(d){
   }else{
     L.push('　（氏名未選択）');
   }
+  const km=kimariCalc(d.cases);
+  if(km.count) L.push('　└ 今週決まった粗利（自動集計）：'+km.sum+'（'+km.count+'件）');
   if(d.juchu) L.push('　今週の受注：'+d.juchu);
   if(d.chaku) L.push('　着地見込み：'+d.chaku);
   L.push('');
   if(d.cases.length){
-    L.push('■ 案件の進捗');
+    L.push('■ 案件の進捗（金額＝粗利・万円）');
     d.cases.forEach((c,i)=>{
-      L.push('　'+(i+1)+'. '+[c.kokyaku,c.kubun,c.shozai,c.kingaku,c.status,(c.tsugi?'→'+c.tsugi:'')].filter(Boolean).join(' / '));
+      L.push('　'+(i+1)+'. '+[c.kokyaku,c.kubun+(c.kikkake?'（'+c.kikkake+'）':''),c.shozai,c.kingaku,c.status,(c.tsugi?'→'+c.tsugi:'')].filter(Boolean).join(' / '));
     });
     L.push('');
   }
   if(d.senshu||d.konshu){
     L.push('■ 先週 → 今週');
-    if(d.senshu) L.push('　先週：'+d.senshu);
-    if(d.konshu) L.push('　今週：'+d.konshu);
+    if(d.senshu) L.push('　先週：'+d.senshu.replace(/\n/g,'\n　　'));
+    if(d.konshu) L.push('　今週：'+d.konshu.replace(/\n/g,'\n　　'));
     L.push('');
   }
-  if(d.kyoyu){ L.push('■ 共有（会議では触れない）'); L.push('　'+d.kyoyu); L.push(''); }
+  if(d.kyoyu){ L.push('■ 共有（会議では触れない）'); L.push('　'+d.kyoyu.replace(/\n/g,'\n　　')); L.push(''); }
   if(d.questions&&d.questions.length){
     d.questions.forEach(q=>{
       L.push('？質問：'+(q.naiyo||'（未記入）')+(q.ate?'（'+q.ate+'）':''));
@@ -410,8 +472,19 @@ function buildText(d){
 }
 
 /* ---- 保存・復元・描画 ---- */
-function save(){ localStorage.setItem(KEY, JSON.stringify(gather())); render(); }
-function render(){ updatePct(); $('#reportPreview').textContent = buildText(gather()); }
+function save(){
+  const d=gather(); d.mk=monthKey();
+  localStorage.setItem(KEY, JSON.stringify(d));
+  if(d.name) localStorage.setItem(NKEY, d.name);
+  saveYotei(d.name, d.amounts);
+  render();
+}
+function render(){
+  updatePct(); updateYen();
+  const d=gather();
+  updateKimari(d); updateYoteiHint();
+  $('#reportPreview').textContent = buildText(d);
+}
 function bindInputs(){
   $$('#pane-report input,#pane-report textarea,#pane-report select').forEach(el=>{
     el.oninput=save; el.onchange=save;
@@ -420,13 +493,20 @@ function bindInputs(){
   if(nm) nm.onchange=()=>{ renderAmounts(nm.value); bindInputs(); save(); };
 }
 function restore(){
-  const raw=localStorage.getItem(KEY); if(!raw){ $('#cases').innerHTML=caseHTML(0); $('#soudans').innerHTML=soudanHTML(0); $('#questions').innerHTML=questionHTML(0); renderAmounts(''); bindInputs(); render(); return; }
+  const raw=localStorage.getItem(KEY);
+  if(!raw){
+    const nm=localStorage.getItem(NKEY)||'';
+    if(nm) $('#r_name').value=nm;
+    $('#cases').innerHTML=caseHTML(0); $('#soudans').innerHTML=soudanHTML(0); $('#questions').innerHTML=questionHTML(0);
+    renderAmounts(nm); bindInputs(); render(); return;
+  }
   const d=JSON.parse(raw);
   $('#r_name').value=d.name||''; $('#r_date').value=d.date||'';
   renderAmounts(d.name||'');
+  const sameMonth=!d.mk||d.mk===monthKey();
   (d.amounts||[]).forEach(x=>{
-    const tEl=$('#amountBox .amt_t[data-key="'+x.key+'"]'); if(tEl)tEl.value=x.t||'';
-    const aEl=$('#amountBox .amt_a[data-key="'+x.key+'"]'); if(aEl)aEl.value=x.a||'';
+    const tEl=$('#amountBox .amt_t[data-key="'+x.key+'"]'); if(tEl&&sameMonth&&x.t)tEl.value=x.t;
+    const aEl=$('#amountBox .amt_a[data-key="'+x.key+'"]'); if(aEl&&sameMonth&&x.a)aEl.value=x.a;
   });
   $('#r_juchu').value=d.juchu||'';
   $('#r_chaku').value=d.chaku||''; $('#r_senshu').value=d.senshu||''; $('#r_konshu').value=d.konshu||''; $('#r_kyoyu').value=d.kyoyu||'';
@@ -434,6 +514,7 @@ function restore(){
   (d.cases||[]).forEach((c,i)=>{const el=$$('#cases .case')[i]; if(!el)return;
     el.querySelector('.c_kokyaku').value=c.kokyaku||'';
     if(c.kubun) el.querySelector('.c_kubun').value=c.kubun;
+    if(c.kikkake&&el.querySelector('.c_kikkake')) el.querySelector('.c_kikkake').value=c.kikkake;
     el.querySelector('.c_shozai').value=c.shozai||'';
     el.querySelector('.c_kingaku').value=c.kingaku||'';
     if(c.status) el.querySelector('.c_status').value=c.status;
@@ -457,7 +538,7 @@ $('#copyReport').onclick=async()=>{
   catch(e){ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('コピーしました'); }
 };
 $('#printReport').onclick=()=>window.print();
-$('#clearReport').onclick=()=>{ if(confirm('入力をすべて消します。よろしいですか？')){ localStorage.removeItem(KEY); location.reload(); } };
+$('#clearReport').onclick=()=>{ if(confirm('入力をすべて消します（氏名と今月の予定は残ります）。よろしいですか？')){ localStorage.removeItem(KEY); location.reload(); } };
 
 /* ---- アジェンダ生成 ---- */
 $('#loadMine').onclick=()=>{
@@ -480,6 +561,12 @@ function parseReports(text){
       const am=l.match(/^[\s　]*(.+?)[：:]\s*予定\s*([0-9.,，\-]+)\s*\/\s*実績\s*([0-9.,，\-]+)/);
       if(am){ amounts.push({label:am[1].trim(), t:am[2], a:am[3]}); }
     });
+    // 「└ 今週決まった粗利（自動集計）：42.4（3件）」の抽出
+    let kimari=null;
+    lines.forEach(l=>{
+      const kmm=l.match(/今週決まった粗利（自動集計）[：:]\s*([0-9.,，]+)（(\d+)件）/);
+      if(kmm){ kimari={sum:kmm[1], count:kmm[2]}; }
+    });
     const soudans=[]; let cur=null;
     lines.forEach(l=>{
       const m=l.match(/^[\s　]*★相談[：:]\s*(.*)$/);
@@ -497,7 +584,7 @@ function parseReports(text){
       const qm=l.match(/^[\s　]*？質問[：:]\s*(.*)$/);
       if(qm){ const t=qm[1].trim(); if(t && t!=='なし') questions.push(t); }
     });
-    return {name, amounts, soudans, questions};
+    return {name, amounts, kimari, soudans, questions};
   });
 }
 function fmtTime(start, addMin){
@@ -525,6 +612,10 @@ $('#genAgenda').onclick=()=>{
   }else{
     statusHtml+='<p style="color:var(--ok);font-weight:700;margin:6px 0">✅ 全員提出済み</p>';
   }
+  const noTarget=reports.filter(r=>(r.amounts||[]).length&&(r.amounts||[]).some(x=>isNaN(num(x.t)))).map(r=>r.name);
+  if(noTarget.length){
+    statusHtml+='<p style="color:var(--warn);font-weight:700;margin:6px 0">⚠ 目標（予定）未入力：'+escapeHtml(noTarget.join('・'))+'</p>';
+  }
   statusHtml+='</div>';
   const allQ=[];
   reports.forEach(r=>(r.questions||[]).forEach(q=>allQ.push({name:r.name, q})));
@@ -541,9 +632,10 @@ $('#genAgenda').onclick=()=>{
   A.push('提出済み：'+subList);
   if(notSubmitted.length) A.push('未提出：'+notSubmitted.join('・'));
   A.push('');
-  A.push('【数字の進捗（万円）】');
+  A.push('【数字の進捗（粗利・万円）】');
   reports.forEach(r=>{
     (r.amounts||[]).forEach(x=>A.push('・'+r.name+' '+x.label+'：予定'+(x.t||'-')+'/実績'+(x.a||'-')+'（'+pct(x.t,x.a)+'）'));
+    if(r.kimari) A.push('　└ '+r.name+' 決まり合計：'+r.kimari.sum+'万（'+r.kimari.count+'件）');
   });
   if(allQ.length){ A.push(''); A.push('【？質問（その場で回答）】'); allQ.forEach(it=>A.push('・'+it.name+'：'+it.q)); }
   if(allSoudan.length){ A.push(''); A.push('【★相談（決める）】'); allSoudan.forEach(s=>A.push('・'+s.name+'：'+s.tema)); }
@@ -636,7 +728,11 @@ function copyAgenda(){
 
 /* ---- 初期化 ---- */
 restore();
-if(!$('#r_date').value){ /* 今日を入れない（Date制限）— 手入力で */ }
+if(!$('#r_date').value){
+  const t=new Date();
+  $('#r_date').value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  save();
+}
 </script>
 </body>
 </html>
