@@ -110,7 +110,7 @@
 
   <div class="card">
     <h2>今週の数字</h2>
-    <p class="hint">氏名を選ぶと、担当の目標項目が出ます。<b>金額はすべて粗利・万円</b>（例：626,000円 → 62.6）。<b>実績＝今月ここまでに「決まった」粗利の合計</b>（受注ベース。下の自動計算が参考になります）。予定（月目標）は月に1回入れれば、翌週からは自動で入ります。</p>
+    <p class="hint">氏名を選ぶと、担当の目標項目が出ます。<b>金額はすべて粗利・万円</b>（例：626,000円 → 62.6）。<b>実績＝今月ここまでに受注（決まった）粗利の合計</b>（下の自動計算が参考になります）。予定（月目標）は月に1回入れれば、翌週からは自動で入ります。</p>
     <div id="amountBox"></div>
     <div id="kimariBox"></div>
     <div id="yoteiHint">※ 予定（今月の目標・万円）が未入力です。月初に共有される数字を1回入れてください（翌週からは自動で入ります）。</div>
@@ -122,7 +122,7 @@
 
   <div class="card">
     <h2>案件の進捗</h2>
-    <p class="hint">今週動いた案件を書く（決まった・見積待ち・商談中など）。件数は自由に追加。</p>
+    <p class="hint">今週動いた案件を書く。件数は自由に追加。実績に集計されるのは「受注（決まった）／納車・施工待ち」だけなので、<b>商談中の見込み額も安心して書けます</b>（数字は汚れません）。</p>
     <div id="cases"></div>
     <span class="addlink" id="addCase">＋ 案件を追加</span>
   </div>
@@ -175,6 +175,7 @@
     <div class="btnbar">
       <button class="btn navy" id="genAgenda">⚙ アジェンダを作る</button>
       <button class="btn ghost" id="loadMine">＋ 自分の報告も取り込む</button>
+      <button class="btn ghost" id="copyYoteiTpl">📋 月初の予定配布テンプレをコピー</button>
     </div>
   </div>
 
@@ -197,7 +198,7 @@
   <div class="card rule">
     <h2>運用ルール</h2>
     <ul>
-      <li><b>数字：</b>金額はすべて<b>粗利・万円</b>で統一（売上を書きたいときは案件の内容欄にカッコ書き）。実績＝今月「決まった」粗利の合計（受注ベース）</li>
+      <li><b>数字：</b>金額はすべて<b>粗利・万円</b>で統一（売上を書きたいときは案件の内容欄にカッコ書き）。実績＝今月「受注（決まった）」粗利の合計。商談中は見込み額でOK（集計には入らない）</li>
       <li><b>予定（月目標）：</b>月初に専務がWebexで各自の予定粗利（万円）を配る → 各自が月1回入力（翌週からは自動で入る）</li>
       <li><b>提出：</b>会議前日（木）17:00までに、Webex「営業会議」スペースへ各自投稿</li>
       <li><b>読む：</b>参加者は会議前に全員ぶん目を通す（会議で読み上げない）</li>
@@ -294,8 +295,8 @@ function caseHTML(i){
     </div>
     <label>内容</label><input class="c_shozai" placeholder="例：リーチ3m中古／タイヤ交換（売上額があれば内容にカッコ書き）">
     <div class="row">
-      <div><label>粗利（万円）</label><input class="c_kingaku" inputmode="decimal" placeholder="例：62.6"><div class="c_yen"></div></div>
-      <div><label>状況</label><select class="c_status"><option>商談中</option><option>見積待ち</option><option>決まった</option><option>納車・施工待ち</option><option>フォロー中</option></select></div>
+      <div><label>粗利（万円）※商談中は見込み額でOK</label><input class="c_kingaku" inputmode="decimal" placeholder="例：62.6（見込みなら概算で）"><div class="c_yen"></div></div>
+      <div><label>状況</label><select class="c_status"><option>商談中</option><option>見積待ち</option><option value="決まった">受注（決まった）</option><option>納車・施工待ち</option><option>フォロー中</option></select></div>
     </div>
     <label>次の一手</label><input class="c_tsugi">
   </div>`;
@@ -369,8 +370,19 @@ function updatePct(){
 function fmtN(v){ const n=num(v); return isNaN(n)?'-':n.toLocaleString(); }
 function kimariCalc(cases){
   const list=(cases||[]).filter(c=>c.status==='決まった'||c.status==='納車・施工待ち');
+  const noAmt=list.filter(c=>isNaN(num(c.kingaku))).length;
   const sum=Math.round(list.reduce((s,c)=>{ const n=num(c.kingaku); return s+(isNaN(n)?0:n); },0)*10)/10;
-  return {count:list.length, sum};
+  return {count:list.length, sum, noAmt};
+}
+const STATUS_TAG={'決まった':'✅受注','納車・施工待ち':'🚚納車・施工待ち','商談中':'💬商談中','見積待ち':'📝見積待ち','フォロー中':'👀フォロー中'};
+function caseHead(c,i){
+  const st=STATUS_TAG[c.status]||c.status;
+  const has=!isNaN(num(c.kingaku));
+  let amt='';
+  if(c.status==='決まった'||c.status==='納車・施工待ち'){ amt=has?('粗利'+c.kingaku+'万'):'⚠金額未記入'; }
+  else if(c.status==='商談中'||c.status==='見積待ち'){ amt=has?('見込'+c.kingaku+'万'):''; }
+  else { amt=has?('粗利'+c.kingaku+'万'):''; }
+  return '　'+(i+1)+'. '+st+(amt?'　'+amt:'')+'｜'+(c.kokyaku||'（顧客名なし）');
 }
 function yenTxt(v){ const n=num(v); return isNaN(n)?'':'＝ '+Math.round(n*10000).toLocaleString()+'円'; }
 function updateYen(){
@@ -380,7 +392,11 @@ function updateYen(){
 function updateKimari(d){
   const box=$('#kimariBox'); if(!box)return;
   const km=kimariCalc(d.cases);
-  if(km.count){ box.style.display='block'; box.innerHTML='📌 参考（自動計算）：「決まった」案件の粗利合計 <b>'+km.sum.toLocaleString()+'万円（'+km.count+'件）</b>。実績欄はこの数字を参考に入れてください。'; }
+  if(km.count){
+    let t='📌 参考（自動計算）：受注（決まった）案件の粗利合計 <b>'+km.sum.toLocaleString()+'万円（'+km.count+'件）</b>。実績欄はこの数字を参考に入れてください。';
+    if(km.noAmt) t+='<br><span style="color:var(--warn);font-weight:700">⚠ うち'+km.noAmt+'件が金額未記入です（0円で集計中）。概算でも粗利を入れると実績が正確になります。</span>';
+    box.style.display='block'; box.innerHTML=t;
+  }
   else{ box.style.display='none'; }
 }
 function updateYoteiHint(){
@@ -397,7 +413,9 @@ function buildSummaryTable(reports){
     const items=r.amounts||[];
     const span=Math.max(items.length,1);
     const kmCell='<td rowspan="'+span+'" style="vertical-align:middle">'
-      +(r.kimari?escapeHtml(r.kimari.sum)+'万<span class="mini">（'+escapeHtml(r.kimari.count)+'件）</span>':'-')+'</td>';
+      +(r.kimari?escapeHtml(r.kimari.sum)+'万<span class="mini">（'+escapeHtml(r.kimari.count)+'件）</span>'
+        +(r.kimari.noAmt?'<br><span class="mini" style="color:var(--warn);font-weight:700">未記入'+escapeHtml(r.kimari.noAmt)+'件</span>':'')
+      :'-')+'</td>';
     if(!items.length){
       rows+='<tr><td style="text-align:left">'+escapeHtml(r.name)+'</td><td colspan="4" style="text-align:left;color:var(--sub)">数字なし</td>'+kmCell+'</tr>';
     }else{
@@ -434,14 +452,18 @@ function buildText(d){
     L.push('　（氏名未選択）');
   }
   const km=kimariCalc(d.cases);
-  if(km.count) L.push('　└ 今週決まった粗利（自動集計）：'+km.sum+'（'+km.count+'件）');
+  if(km.count) L.push('　└ 今週決まった粗利（自動集計）：'+km.sum+'（'+km.count+'件）'+(km.noAmt?'　※金額未記入'+km.noAmt+'件':''));
   if(d.juchu) L.push('　今週の受注：'+d.juchu);
   if(d.chaku) L.push('　着地見込み：'+d.chaku);
   L.push('');
   if(d.cases.length){
     L.push('■ 案件の進捗（金額＝粗利・万円）');
     d.cases.forEach((c,i)=>{
-      L.push('　'+(i+1)+'. '+[c.kokyaku,c.kubun+(c.kikkake?'（'+c.kikkake+'）':''),c.shozai,c.kingaku,c.status,(c.tsugi?'→'+c.tsugi:'')].filter(Boolean).join(' / '));
+      if(i>0) L.push('');
+      L.push(caseHead(c,i));
+      const line2=[c.kubun+(c.kikkake?'（'+c.kikkake+'）':''), c.shozai].filter(Boolean).join('／');
+      if(line2) L.push('　　　'+line2);
+      if(c.tsugi) L.push('　　　→ '+c.tsugi);
     });
     L.push('');
   }
@@ -540,6 +562,20 @@ $('#copyReport').onclick=async()=>{
 $('#printReport').onclick=()=>window.print();
 $('#clearReport').onclick=()=>{ if(confirm('入力をすべて消します（氏名と今月の予定は残ります）。よろしいですか？')){ localStorage.removeItem(KEY); location.reload(); } };
 
+/* ---- 月初の予定配布テンプレ ---- */
+$('#copyYoteiTpl').onclick=()=>{
+  const mk=monthKey(); const p=mk.split('-');
+  const L=['【'+p[0]+'年'+Number(p[1])+'月の予定粗利（万円）】','※各自、営業会議ボードの「予定」欄に1回入力してください（翌週からは自動で入ります）'];
+  Object.keys(MEMBERS).forEach(nm=>{
+    const items=MEMBERS[nm].map(it=>it.label).join('／');
+    L.push(nm+'（'+items+'）：　');
+  });
+  const t=L.join('\n');
+  const done=()=>toast('予定配布テンプレをコピーしました。数字を入れてWebexに投稿してください');
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done).catch(()=>{fallbackCopy(t);done();}); }
+  else { fallbackCopy(t); done(); }
+};
+
 /* ---- アジェンダ生成 ---- */
 $('#loadMine').onclick=()=>{
   const t=buildText(gather());
@@ -561,11 +597,11 @@ function parseReports(text){
       const am=l.match(/^[\s　]*(.+?)[：:]\s*予定\s*([0-9.,，\-]+)\s*\/\s*実績\s*([0-9.,，\-]+)/);
       if(am){ amounts.push({label:am[1].trim(), t:am[2], a:am[3]}); }
     });
-    // 「└ 今週決まった粗利（自動集計）：42.4（3件）」の抽出
+    // 「└ 今週決まった粗利（自動集計）：42.4（3件）※金額未記入1件」の抽出
     let kimari=null;
     lines.forEach(l=>{
-      const kmm=l.match(/今週決まった粗利（自動集計）[：:]\s*([0-9.,，]+)（(\d+)件）/);
-      if(kmm){ kimari={sum:kmm[1], count:kmm[2]}; }
+      const kmm=l.match(/今週決まった粗利（自動集計）[：:]\s*([0-9.,，]+)（(\d+)件）(?:[\s　]*※金額未記入(\d+)件)?/);
+      if(kmm){ kimari={sum:kmm[1], count:kmm[2], noAmt:kmm[3]||''}; }
     });
     const soudans=[]; let cur=null;
     lines.forEach(l=>{
