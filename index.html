@@ -576,7 +576,7 @@ $('#clearReport').onclick=()=>{ if(confirm('入力をすべて消します（氏
 $('#copyYoteiTpl').onclick=()=>{
   const mk=monthKey(); const p=mk.split('-');
   const L=['【'+p[0]+'年'+Number(p[1])+'月の予定粗利（万円）】','※各自、営業会議ボードの「予定」欄に1回入力してください（翌週からは自動で入ります）'];
-  Object.keys(MEMBERS).forEach(nm=>{
+  Object.keys(MEMBERS).filter(nm=>nm!=='山田（専務）').forEach(nm=>{
     const items=MEMBERS[nm].map(it=>it.label).join('／');
     L.push(nm+'（'+items+'）：　');
   });
@@ -645,12 +645,13 @@ $('#genAgenda').onclick=()=>{
   const out=$('#agendaOut');
   if(!text){ out.innerHTML='<div class="card"><div class="empty">まず報告を貼り付けてください。</div></div>'; return; }
   const reports=parseReports(text);
-  // 提出状況（未提出者の見える化）
+  // 提出状況（未提出者の見える化）※専務は基本提出しないため母数は営業4名
   const submitted=reports.map(r=>r.name);
-  const allMembers=Object.keys(MEMBERS);
-  const notSubmitted=allMembers.filter(m=>!submitted.includes(m));
+  const required=Object.keys(MEMBERS).filter(m=>m!=='山田（専務）');
+  const submittedReq=required.filter(m=>submitted.includes(m));
+  const notSubmitted=required.filter(m=>!submitted.includes(m));
   const subList=submitted.length?submitted.join('・'):'なし';
-  let statusHtml='<div class="card"><h2>🧾 提出状況（'+reports.length+'/'+allMembers.length+'）</h2>'
+  let statusHtml='<div class="card"><h2>🧾 提出状況（'+submittedReq.length+'/'+required.length+'）</h2>'
     +'<p class="mini" style="margin:2px 0">提出済み：'+escapeHtml(subList)+'</p>';
   if(notSubmitted.length){
     statusHtml+='<p style="color:var(--warn);font-weight:700;margin:6px 0">未提出：'+escapeHtml(notSubmitted.join('・'))+'</p>'
@@ -674,7 +675,7 @@ $('#genAgenda').onclick=()=>{
   const A=[];
   A.push('■ 営業会議 '+start+'〜'+end+'（15分）');
   A.push('');
-  A.push('【提出状況】'+reports.length+'/'+allMembers.length);
+  A.push('【提出状況】'+submittedReq.length+'/'+required.length);
   A.push('提出済み：'+subList);
   if(notSubmitted.length) A.push('未提出：'+notSubmitted.join('・'));
   A.push('');
