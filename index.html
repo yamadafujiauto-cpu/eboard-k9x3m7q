@@ -110,7 +110,7 @@
 
   <div class="card">
     <h2>今週の数字</h2>
-    <p class="hint">氏名を選ぶと、担当の目標項目が出ます。<b>金額はすべて粗利・万円</b>（例：626,000円 → 62.6）。<b>実績＝今月ここまでに受注（決まった）粗利の合計</b>（下の自動計算が参考になります）。予定（月目標）は月に1回入れれば、翌週からは自動で入ります。</p>
+    <p class="hint">氏名を選ぶと、担当の目標項目が出ます。<b>金額はすべて粗利・万円</b>（例：626,000円 → 62.6）。<b>実績＝今月受注（決まった）した粗利の合計</b>。先月受注して納車待ちで残っている案件は含めません（下の自動計算から先月ぶんを引いて入れる）。予定（月目標）は月に1回入れれば、翌週からは自動で入ります。</p>
     <div id="amountBox"></div>
     <div id="kimariBox"></div>
     <div id="yoteiHint">※ 予定（今月の目標・万円）が未入力です。月初に共有される数字を1回入れてください（翌週からは自動で入ります）。</div>
@@ -198,7 +198,8 @@
   <div class="card rule">
     <h2>運用ルール</h2>
     <ul>
-      <li><b>数字：</b>金額はすべて<b>粗利・万円</b>で統一（売上を書きたいときは案件の内容欄にカッコ書き）。実績＝今月「受注（決まった）」粗利の合計。商談中は見込み額でOK（集計には入らない）</li>
+      <li><b>数字：</b>金額はすべて<b>粗利・万円</b>で統一（売上を書きたいときは案件の内容欄にカッコ書き）。実績＝<b>今月</b>受注（決まった）した粗利の合計（先月受注ぶんは含めない）。商談中は見込み額でOK（集計には入らない）</li>
+      <li><b>案件の掃除：</b>納車・請求まで終わった先月の案件は、月が変わったら削除する（当月中は残してOK）。複数台まとめ書きの金額は「13+13」のように＋でつなげば合算されます</li>
       <li><b>予定（月目標）：</b>月初に専務がWebexで各自の予定粗利（万円）を配る → 各自が月1回入力（翌週からは自動で入る）</li>
       <li><b>提出：</b>会議前日（木）17:00までに、Webex「営業会議」スペースへ各自投稿</li>
       <li><b>読む：</b>参加者は会議前に全員ぶん目を通す（会議で読み上げない）</li>
@@ -359,7 +360,16 @@ function gather(){
 }
 
 /* ---- 数字ヘルパー ---- */
-function num(v){ const n=parseFloat(String(v==null?'':v).replace(/[,，\s]/g,'')); return isNaN(n)?NaN:n; }
+function num(v){
+  const s=String(v==null?'':v).replace(/[,，\s]/g,'').replace(/＋/g,'+');
+  if(s.indexOf('+')>=0){
+    // 「13+13」のような複数台まとめ書きは合算して解釈する（26として集計）
+    const parts=s.split('+').map(p=>parseFloat(p)).filter(n=>!isNaN(n));
+    return parts.length?Math.round(parts.reduce((a,b)=>a+b,0)*100)/100:NaN;
+  }
+  const n=parseFloat(s);
+  return isNaN(n)?NaN:n;
+}
 function pct(t,a){ const T=num(t),A=num(a); if(isNaN(T)||T===0||isNaN(A))return '-'; return Math.round(A/T*100)+'%'; }
 function updatePct(){
   $$('#amountBox .num3').forEach(box=>{
@@ -393,7 +403,7 @@ function updateKimari(d){
   const box=$('#kimariBox'); if(!box)return;
   const km=kimariCalc(d.cases);
   if(km.count){
-    let t='📌 参考（自動計算）：受注（決まった）案件の粗利合計 <b>'+km.sum.toLocaleString()+'万円（'+km.count+'件）</b>。実績欄はこの数字を参考に入れてください。';
+    let t='📌 参考（自動計算）：受注済み案件の粗利合計（納車待ち含む） <b>'+km.sum.toLocaleString()+'万円（'+km.count+'件）</b>。<b>このうち今月受注した分だけ</b>を実績欄に入れてください（先月受注ぶんは含めない）。';
     if(km.noAmt) t+='<br><span style="color:var(--warn);font-weight:700">⚠ うち'+km.noAmt+'件が金額未記入です（0円で集計中）。概算でも粗利を入れると実績が正確になります。</span>';
     box.style.display='block'; box.innerHTML=t;
   }
@@ -423,7 +433,7 @@ function buildSummaryTable(reports){
         const tCell=isNaN(num(x.t))?'<td style="color:var(--warn);font-weight:700">未入力</td>':'<td>'+fmtN(x.t)+'</td>';
         const K=r.kimari?num(r.kimari.sum):NaN;
         const A=num(x.a);
-        const warn=(idx===0&&!isNaN(K)&&K>0&&(isNaN(A)||A<K))?' <span title="決まり合計より実績が小さい（未反映の可能性）" style="color:var(--gold);font-weight:700">⚠</span>':'';
+        const warn=(idx===0&&!isNaN(K)&&K>0&&(isNaN(A)||A<K))?' <span title="実績が受注済み合計より小さい（先月受注ぶんが残っている場合は問題なし）" style="color:var(--gold);font-weight:700">⚠</span>':'';
         rows+='<tr>'
           +(idx===0?'<td style="text-align:left;vertical-align:middle" rowspan="'+span+'">'+escapeHtml(r.name)+'</td>':'')
           +'<td style="text-align:left">'+escapeHtml(x.label)+'</td>'
@@ -433,7 +443,7 @@ function buildSummaryTable(reports){
     }
   });
   return '<div class="card"><h2>📊 目標の進捗サマリー</h2>'
-    +'<p class="hint">各自の報告から自動集計（当月の予定に対する進捗・粗利・万円）。緑=100%以上／黄=80%以上／赤=未満。「決まり」＝報告内で「決まった」案件の粗利合計（自動）。⚠＝実績が決まり合計より小さい（実績欄が未更新の可能性）。</p>'
+    +'<p class="hint">各自の報告から自動集計（当月の予定に対する進捗・粗利・万円）。緑=100%以上／黄=80%以上／赤=未満。「決まり」＝受注済み案件（納車待ち含む・先月分も含む）の粗利合計。⚠＝実績が決まりより小さい（先月受注ぶんが残っている場合は問題なし）。</p>'
     +'<table><tr><th>担当</th><th>項目</th><th>予定</th><th>実績</th><th>進捗</th><th>決まり(自動)</th></tr>'
     +rows+'</table></div>';
 }
@@ -452,7 +462,7 @@ function buildText(d){
     L.push('　（氏名未選択）');
   }
   const km=kimariCalc(d.cases);
-  if(km.count) L.push('　└ 今週決まった粗利（自動集計）：'+km.sum+'（'+km.count+'件）'+(km.noAmt?'　※金額未記入'+km.noAmt+'件':''));
+  if(km.count) L.push('　└ 受注済み案件の粗利合計（自動集計・納車待ち含む）：'+km.sum+'（'+km.count+'件）'+(km.noAmt?'　※金額未記入'+km.noAmt+'件':''));
   if(d.juchu) L.push('　今週の受注：'+d.juchu);
   if(d.chaku) L.push('　着地見込み：'+d.chaku);
   L.push('');
@@ -597,10 +607,10 @@ function parseReports(text){
       const am=l.match(/^[\s　]*(.+?)[：:]\s*予定\s*([0-9.,，\-]+)\s*\/\s*実績\s*([0-9.,，\-]+)/);
       if(am){ amounts.push({label:am[1].trim(), t:am[2], a:am[3]}); }
     });
-    // 「└ 今週決まった粗利（自動集計）：42.4（3件）※金額未記入1件」の抽出
+    // 決まり集計行の抽出（新ラベル「受注済み案件の粗利合計」と旧ラベル「今週決まった粗利」の両対応）
     let kimari=null;
     lines.forEach(l=>{
-      const kmm=l.match(/今週決まった粗利（自動集計）[：:]\s*([0-9.,，]+)（(\d+)件）(?:[\s　]*※金額未記入(\d+)件)?/);
+      const kmm=l.match(/(?:受注済み案件の粗利合計（自動集計・納車待ち含む）|今週決まった粗利（自動集計）)[：:]\s*([0-9.,，]+)（(\d+)件）(?:[\s　]*※金額未記入(\d+)件)?/);
       if(kmm){ kimari={sum:kmm[1], count:kmm[2], noAmt:kmm[3]||''}; }
     });
     const soudans=[]; let cur=null;
