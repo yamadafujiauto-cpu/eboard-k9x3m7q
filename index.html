@@ -34,6 +34,10 @@
   .num3 .col small{display:block;font-size:11px;color:var(--sub);margin-bottom:3px;text-align:center;}
   .case{border:1px dashed var(--line);border-radius:10px;padding:10px;margin-top:10px;background:#fafdff;}
   .case .lbl{font-size:11px;font-weight:700;color:var(--blue);margin-bottom:4px;}
+  .case.done{opacity:.55;}
+  .done-toggle{color:var(--ok);font-size:12px;cursor:pointer;font-weight:600;float:right;margin-right:12px;}
+  .done-badge{display:none;background:var(--ok);color:#fff;font-size:10px;padding:1px 7px;border-radius:10px;margin-left:6px;font-weight:700;}
+  .case.done .done-badge{display:inline-block;}
   .soudan{border:1px solid var(--gold);background:#fffaf0;border-radius:10px;padding:12px;margin-top:10px;position:relative;}
   .soudan .star{font-weight:800;color:var(--gold);font-size:13px;margin-bottom:6px;}
   .question{border:1px solid var(--blue);background:#f0f9ff;border-radius:10px;padding:12px;margin-top:10px;position:relative;}
@@ -92,7 +96,7 @@
 <div class="wrap pane" id="pane-report">
   <div class="card">
     <h2>① 自分の週次報告を書く</h2>
-    <p class="hint">前日（木）17時までに記入 →「Webex用にコピー」して営業スペースに貼るだけ。入力内容はこのPCに自動保存されます。</p>
+    <p class="hint">前日（木）18時までに記入 →「Webex用にコピー」して営業スペースに貼るだけ。入力内容はこのPCに自動保存されます。</p>
     <div class="row">
       <div><label>氏名</label>
         <select id="r_name">
@@ -122,7 +126,7 @@
 
   <div class="card">
     <h2>案件の進捗</h2>
-    <p class="hint">今週動いた案件を書く。件数は自由に追加。実績に集計されるのは「受注（決まった）／納車・施工待ち」だけなので、<b>商談中の見込み額も安心して書けます</b>（数字は汚れません）。</p>
+    <p class="hint">今週動いた案件を書く。件数は自由に追加。実績に集計されるのは「受注（決まった）／納車・施工待ち」だけなので、<b>商談中の見込み額も安心して書けます</b>（数字は汚れません）。板金・整備など粗利が出しにくい仕事は<b>工賃額を粗利に入れてOK</b>。書いた案件は<b>翌週も残ります</b>。終わった案件は各カードの「✓完了」で片付けてください（消さずに残せます）。</p>
     <div id="cases"></div>
     <span class="addlink" id="addCase">＋ 案件を追加</span>
   </div>
@@ -201,7 +205,7 @@
       <li><b>数字：</b>金額はすべて<b>粗利・万円</b>で統一（売上を書きたいときは案件の内容欄にカッコ書き）。実績＝<b>今月</b>受注（決まった）した粗利の合計（先月受注ぶんは含めない）。商談中は見込み額でOK（集計には入らない）</li>
       <li><b>案件の掃除：</b>納車・請求まで終わった先月の案件は、月が変わったら削除する（当月中は残してOK）。複数台まとめ書きの金額は「13+13」のように＋でつなげば合算されます</li>
       <li><b>予定（月目標）：</b>月初に専務がWebexで各自の予定粗利（万円）を配る → 各自が月1回入力（翌週からは自動で入る）</li>
-      <li><b>提出：</b>会議前日（木）17:00までに、Webex「営業会議」スペースへ各自投稿</li>
+      <li><b>提出：</b>会議前日（木）18:00までに、Webex「営業会議」スペースへ各自投稿</li>
       <li><b>読む：</b>参加者は会議前に全員ぶん目を通す（会議で読み上げない）</li>
       <li><b>会議：</b>金 8:25〜8:40（最大15分）</li>
       <li><b>スキップ：</b>質問も相談も無い週は会議を開かない（司会がチャットで「今週なし」）</li>
@@ -288,10 +292,11 @@ function toast(msg){
 function caseHTML(i){
   return `<div class="case" data-i="${i}">
     <span class="del" onclick="this.parentNode.remove();save();render()">削除</span>
-    <div class="lbl">案件 ${i+1}</div>
+    <span class="done-toggle" onclick="toggleDone(this)">✓ 完了にする</span>
+    <div class="lbl">案件 ${i+1}<span class="done-badge">完了・報告に出ません</span></div>
     <div class="row">
       <div><label>顧客</label><input class="c_kokyaku"></div>
-      <div><label>区分</label><select class="c_kubun"><option>FL販売</option><option>レンタル</option><option>メンテ・点検</option><option>リース</option><option>車両販売</option><option>保険</option><option>その他</option></select></div>
+      <div><label>区分</label><select class="c_kubun"><option>FL販売</option><option>レンタル</option><option>メンテ・点検</option><option>整備・修理</option><option>鈑金・塗装</option><option>リース</option><option>車両販売</option><option>保険</option><option>その他</option></select></div>
       <div><label>きっかけ（任意）</label><select class="c_kikkake"><option value=""></option><option>テレアポ</option><option>フリーダイヤル</option><option>既存客</option><option>紹介</option><option>飛び込み</option><option>その他</option></select></div>
     </div>
     <label>内容</label><input class="c_shozai" placeholder="例：リーチ3m中古／タイヤ交換（売上額があれば内容にカッコ書き）">
@@ -319,6 +324,14 @@ function questionHTML(i){
     <label>誰の何について（任意）</label><input class="q_ate" placeholder="例：勝村さんのA案件">
   </div>`;
 }
+function toggleDone(el){
+  const card=el.closest('.case'); if(!card)return;
+  const done=card.getAttribute('data-done')==='1';
+  card.setAttribute('data-done', done?'0':'1');
+  card.classList.toggle('done', !done);
+  el.textContent = done ? '✓ 完了にする' : '↩ 戻す';
+  save();
+}
 $('#addCase').onclick=()=>{const n=$$('#cases .case').length; $('#cases').insertAdjacentHTML('beforeend',caseHTML(n)); bindInputs(); save();};
 $('#addSoudan').onclick=()=>{const n=$$('#soudans .soudan').length; $('#soudans').insertAdjacentHTML('beforeend',soudanHTML(n)); bindInputs(); save();};
 $('#addQuestion').onclick=()=>{const n=$$('#questions .question').length; $('#questions').insertAdjacentHTML('beforeend',questionHTML(n)); bindInputs(); save();};
@@ -333,6 +346,7 @@ function gather(){
     kingaku:c.querySelector('.c_kingaku').value.trim(),
     status:c.querySelector('.c_status').value,
     tsugi:c.querySelector('.c_tsugi').value.trim(),
+    done:c.getAttribute('data-done')==='1',
   })).filter(c=>c.kokyaku||c.shozai||c.kingaku||c.tsugi);
   const soudans=[...$$('#soudans .soudan')].map(s=>({
     tema:s.querySelector('.s_tema').value.trim(),
@@ -379,7 +393,7 @@ function updatePct(){
 }
 function fmtN(v){ const n=num(v); return isNaN(n)?'-':n.toLocaleString(); }
 function kimariCalc(cases){
-  const list=(cases||[]).filter(c=>c.status==='決まった'||c.status==='納車・施工待ち');
+  const list=(cases||[]).filter(c=>!c.done&&(c.status==='決まった'||c.status==='納車・施工待ち'));
   const noAmt=list.filter(c=>isNaN(num(c.kingaku))).length;
   const sum=Math.round(list.reduce((s,c)=>{ const n=num(c.kingaku); return s+(isNaN(n)?0:n); },0)*10)/10;
   return {count:list.length, sum, noAmt};
@@ -466,9 +480,10 @@ function buildText(d){
   if(d.juchu) L.push('　今週の受注：'+d.juchu);
   if(d.chaku) L.push('　着地見込み：'+d.chaku);
   L.push('');
-  if(d.cases.length){
+  const activeCases=(d.cases||[]).filter(c=>!c.done);
+  if(activeCases.length){
     L.push('■ 案件の進捗（金額＝粗利・万円）');
-    d.cases.forEach((c,i)=>{
+    activeCases.forEach((c,i)=>{
       if(i>0) L.push('');
       L.push(caseHead(c,i));
       const line2=[c.kubun+(c.kikkake?'（'+c.kikkake+'）':''), c.shozai].filter(Boolean).join('／');
@@ -551,6 +566,7 @@ function restore(){
     el.querySelector('.c_kingaku').value=c.kingaku||'';
     if(c.status) el.querySelector('.c_status').value=c.status;
     el.querySelector('.c_tsugi').value=c.tsugi||'';
+    if(c.done){ el.setAttribute('data-done','1'); el.classList.add('done'); const dt=el.querySelector('.done-toggle'); if(dt)dt.textContent='↩ 戻す'; }
   });
   $('#soudans').innerHTML = (d.soudans&&d.soudans.length?d.soudans:[{}]).map((s,i)=>soudanHTML(i)).join('');
   (d.soudans||[]).forEach((s,i)=>{const el=$$('#soudans .soudan')[i]; if(!el)return;
@@ -760,7 +776,7 @@ $('#genAgenda').onclick=()=>{
 function escapeHtml(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 function fallbackCopy(t){ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
 function copyReminder(names){
-  const t='【提出のお願い】\n営業ウィークリー（営業会議の報告）の提出をお願いします。\n締切：木曜17:00まで ／ 未提出：'+names+'\n相談・質問が無ければ、数字だけでもOKです（3分で終わります）。';
+  const t='【提出のお願い】\n営業ウィークリー（営業会議の報告）の提出をお願いします。\n締切：木曜18:00まで ／ 未提出：'+names+'\n相談・質問が無ければ、数字だけでもOKです（3分で終わります）。';
   const done=()=>toast('督促文をコピーしました');
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done).catch(()=>{fallbackCopy(t);done();}); }
   else { fallbackCopy(t); done(); }
