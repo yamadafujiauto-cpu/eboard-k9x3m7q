@@ -35,6 +35,11 @@
   .case{border:1px dashed var(--line);border-radius:10px;padding:10px;margin-top:10px;background:#fafdff;}
   .case .lbl{font-size:11px;font-weight:700;color:var(--blue);margin-bottom:4px;}
   .case.done{opacity:.55;}
+  .case.search-hide{display:none;}
+  .searchbar{position:relative;margin:2px 0 4px;}
+  .searchbar input{padding-left:34px;}
+  .searchbar .mag{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;}
+  #caseSearchInfo{font-size:12px;margin-top:5px;min-height:15px;}
   .done-toggle{color:var(--ok);font-size:12px;cursor:pointer;font-weight:600;float:right;margin-right:12px;}
   .done-badge{display:none;background:var(--ok);color:#fff;font-size:10px;padding:1px 7px;border-radius:10px;margin-left:6px;font-weight:700;}
   .case.done .done-badge{display:inline-block;}
@@ -127,6 +132,11 @@
   <div class="card">
     <h2>案件の進捗</h2>
     <p class="hint">今週動いた案件を書く。件数は自由に追加。実績に集計されるのは「受注（決まった）／納車・施工待ち」だけなので、<b>商談中の見込み額も安心して書けます</b>（数字は汚れません）。板金・整備など粗利が出しにくい仕事は<b>工賃額を粗利に入れてOK</b>。書いた案件は<b>翌週も残ります</b>。終わった案件は各カードの「✓完了」で片付けてください（消さずに残せます）。</p>
+    <div class="searchbar no-print">
+      <span class="mag">🔍</span>
+      <input id="caseSearch" type="search" placeholder="お客さん名でさがす（例：晃伸製機）" autocomplete="off">
+    </div>
+    <div class="mini no-print" id="caseSearchInfo"></div>
     <div id="cases"></div>
     <span class="addlink" id="addCase">＋ 案件を追加</span>
   </div>
@@ -332,7 +342,38 @@ function toggleDone(el){
   el.textContent = done ? '✓ 完了にする' : '↩ 戻す';
   save();
 }
-$('#addCase').onclick=()=>{const n=$$('#cases .case').length; $('#cases').insertAdjacentHTML('beforeend',caseHTML(n)); bindInputs(); save();};
+
+/* ---- お客さん名の検索（案件カードの絞り込み・表示だけ／データは変えない） ---- */
+function normSearch(s){
+  // 全角英数→半角・小文字化・空白除去・ひらがな→カタカナで表記ゆれを吸収
+  return (s||'')
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
+    .toLowerCase()
+    .replace(/[\s　]/g,'')
+    .replace(/[ぁ-ん]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60));
+}
+function applyCaseSearch(){
+  const inp=$('#caseSearch'); if(!inp)return;
+  const q=normSearch(inp.value);
+  const info=$('#caseSearchInfo');
+  let hit=0, total=0;
+  $$('#cases .case').forEach(c=>{
+    total++;
+    const target=normSearch(c.querySelector('.c_kokyaku').value)+'｜'+normSearch(c.querySelector('.c_shozai').value);
+    const show=!q||target.indexOf(q)>=0;
+    c.classList.toggle('search-hide',!show);
+    if(show)hit++;
+  });
+  if(!info)return;
+  if(!q){ info.textContent=''; }
+  else if(hit===0){ info.textContent='見つかりませんでした（完了にした案件も含めて探しています）。検索を空にすると全件表示に戻ります'; info.style.color='var(--warn)'; }
+  else{ info.textContent=hit+'件 見つかりました（全'+total+'件中・完了ぶんも含む）。検索を空にすると全件表示に戻ります'; info.style.color='var(--ok)'; }
+}
+$('#caseSearch').oninput=applyCaseSearch;
+$('#addCase').onclick=()=>{
+  const cs=$('#caseSearch'); if(cs&&cs.value){ cs.value=''; applyCaseSearch(); }
+  const n=$$('#cases .case').length; $('#cases').insertAdjacentHTML('beforeend',caseHTML(n)); bindInputs(); save();
+};
 $('#addSoudan').onclick=()=>{const n=$$('#soudans .soudan').length; $('#soudans').insertAdjacentHTML('beforeend',soudanHTML(n)); bindInputs(); save();};
 $('#addQuestion').onclick=()=>{const n=$$('#questions .question').length; $('#questions').insertAdjacentHTML('beforeend',questionHTML(n)); bindInputs(); save();};
 
@@ -534,6 +575,7 @@ function render(){
 }
 function bindInputs(){
   $$('#pane-report input,#pane-report textarea,#pane-report select').forEach(el=>{
+    if(el.id==='caseSearch') return; // 検索窓は絞り込み専用（保存・プレビューに影響させない）
     el.oninput=save; el.onchange=save;
   });
   const nm=$('#r_name');
