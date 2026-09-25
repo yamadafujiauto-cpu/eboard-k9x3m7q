@@ -117,6 +117,50 @@
   <p>報告は事前にテキストで／会議は相談だけ・15分。フジ自動車工業</p>
 </header>
 
+<!-- ===== 引っ越し案内（GitHub Pages の旧ボード専用・build_github_banner.js で生成） ===== -->
+<div id="ekbMoveBanner" class="no-print" style="background:#fff8e6;border-bottom:3px solid #e8a400;padding:16px 18px;">
+  <div style="max-width:880px;margin:0 auto;">
+    <div style="font-size:17px;font-weight:800;color:#00467A;">📦 営業会議ボードは新しい住所に引っ越しました</div>
+    <p style="margin:6px 0;font-size:14px;">下の青いボタンを押すと、このボードに入っている案件（保留・完了も含む）を<b>そのまま新しいボードへコピー</b>します。<b>このボードのデータは消えません。</b></p>
+    <p id="ekbMoveCount" style="margin:6px 0;font-size:13px;color:#5b6b78;"></p>
+    <button id="ekbMoveBtn" type="button" style="background:#0095D9;color:#fff;border:none;border-radius:9px;padding:12px 18px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">➡ 新しいボードへ引っ越す（データごと）</button>
+    <p style="margin:8px 0 0;font-size:12px;color:#5b6b78;">※ パソコンとスマホの両方で使っている人は、それぞれで1回ずつ押してください。引っ越したあとは、新しいボードをブックマークしてください。</p>
+    <p id="ekbMoveDone" style="margin:8px 0 0;font-size:13px;color:#d9534f;font-weight:700;" hidden></p>
+  </div>
+</div>
+<script>
+(function(){
+  var NEW_URL="https://eboard-ame6tm.pages.dev/";
+  function textToB64(t){
+    var u=new TextEncoder().encode(t), bin='';
+    for(var i=0;i<u.length;i+=0x8000){ bin+=String.fromCharCode.apply(null, u.subarray(i,i+0x8000)); }
+    return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+  function get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  var rep=null; try{ rep=JSON.parse(get('ekb_report_v1')||'null'); }catch(e){}
+  var cs=((rep&&rep.cases)||[]).filter(function(c){ return c&&(c.kokyaku||c.shozai||c.kingaku||c.tsugi); });
+  var h=cs.filter(function(c){ return c.hold&&!c.done; }).length, d=cs.filter(function(c){ return c.done; }).length;
+  var cnt=document.getElementById('ekbMoveCount');
+  cnt.textContent = cs.length
+    ? 'このブラウザに入っている案件：'+cs.length+'件（進行中'+(cs.length-h-d)+'・保留'+h+'・完了'+d+'）'
+    : 'このブラウザには案件のデータがありません。いつも使っているブラウザ（Edge・Chromeなど）で開いているか確かめてください。データが無い人は、ボタンを押してそのまま新しいボードを使い始めてOKです。';
+  var moved=get('ekb_moved_out');
+  if(moved){
+    var t=new Date(moved), dn=document.getElementById('ekbMoveDone');
+    dn.textContent='この端末は '+(t.getMonth()+1)+'/'+t.getDate()+' '+t.getHours()+':'+String(t.getMinutes()).padStart(2,'0')+' に引っ越し済みです。これからは新しいボードを使ってください（このボードに書いても新しいボードには届きません）。';
+    dn.hidden=false;
+    document.getElementById('ekbMoveBtn').textContent='➡ 新しいボードを開く（もう一度データを送る）';
+  }
+  document.getElementById('ekbMoveBtn').onclick=function(){
+    var y={}; try{ y=JSON.parse(get('ekb_yotei_v1')||'{}'); }catch(e){}
+    var pack={v:1, report:rep, name:get('ekb_name_v1')||'', yotei:y, at:new Date().toISOString()};
+    try{ localStorage.setItem('ekb_moved_out', new Date().toISOString()); }catch(e){}
+    location.href=NEW_URL+'#ekbmove='+textToB64(JSON.stringify(pack));
+  };
+})();
+</script>
+
+
 <div class="tabs">
   <div class="tab active" data-tab="report">📝 報告を書く</div>
   <div class="tab" data-tab="agenda">📋 当日アジェンダ（司会用）</div>
@@ -125,6 +169,7 @@
 
 <!-- ========== 報告を書く ========== -->
 <div class="wrap pane" id="pane-report">
+  <div class="card no-print" id="moveMsg" hidden style="border-color:var(--ok);background:#eefaf2;color:#1f7a47;font-weight:700;font-size:14px;"></div>
   <div class="card">
     <h2>① 自分の週次報告を書く</h2>
     <p class="hint">前日（木）18時までに記入 →「Webex用にコピー」して営業スペースに貼るだけ。入力内容はこのPCに自動保存されます。</p>
@@ -985,8 +1030,82 @@ function copyAgenda(){
   else { fallbackCopy(_agendaText); done(); }
 }
 
+/* ---- 引っ越しデータの受け取り（旧ボード GitHub Pages → このボード）----
+   旧ボードの「新しいボードへ引っ越す」ボタンが #ekbmove=… 付きでこのページを開く。
+   ・旧ボード側のデータは消さない（コピー）
+   ・このボードに入力があれば上書きせず、足りない案件だけ足す。取り込み前の状態は ekb_report_v1_before_move に控える */
+function b64ToText(b){
+  b=b.replace(/-/g,'+').replace(/_/g,'/'); while(b.length%4) b+='=';
+  const bin=atob(b), u=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+  return new TextDecoder().decode(u);
+}
+function hasCaseBody(c){ return !!(c&&(c.kokyaku||c.shozai||c.kingaku||c.tsugi)); }
+function caseKey(c){ return [c.kokyaku||'',c.kubun||'',c.shozai||'',c.kingaku||'',c.status||'',c.tsugi||''].join('｜'); }
+function caseCountTxt(cs){
+  const h=cs.filter(c=>c.hold&&!c.done).length, d=cs.filter(c=>c.done).length;
+  return cs.length+'件（進行中'+(cs.length-h-d)+'・保留'+h+'・完了'+d+'）';
+}
+function importMoveData(){
+  const m=(location.hash||'').match(/^#ekbmove=([A-Za-z0-9_-]+)$/);
+  if(!m) return '';
+  // 取り込み後はアドレス欄から消す（再読み込みで二重に取り込まない）
+  const clearHash=()=>{ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} };
+  let pack=null;
+  try{ pack=JSON.parse(b64ToText(m[1])); }catch(e){}
+  if(!pack||pack.v!==1||typeof pack!=='object'){
+    clearHash();
+    alert('引っ越しデータを読み取れませんでした。前のボードのデータは消えていないので、前のボードでもう一度「新しいボードへ引っ越す」を押してください。');
+    return '';
+  }
+  const incR=(pack.report&&typeof pack.report==='object')?pack.report:null;
+  const incCases=((incR&&Array.isArray(incR.cases))?incR.cases:[]).filter(hasCaseBody);
+  let cur=null; try{ cur=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){}
+  const curCases=((cur&&Array.isArray(cur.cases))?cur.cases:[]).filter(hasCaseBody);
+  let msg='前のボードから入力データを取り込みます。\n案件 '+caseCountTxt(incCases)+'\n';
+  if(curCases.length) msg+='\nこのボードにはすでに案件が'+curCases.length+'件あります。消さずに、足りない案件だけを追加します。\n';
+  msg+='\nよろしいですか？（前のボードのデータは消えません）';
+  if(!confirm(msg)){ clearHash(); return ''; }
+  try{
+    if(cur) localStorage.setItem(KEY+'_before_move', JSON.stringify(cur));
+    let next=null;
+    if(!cur){ next=incR; }
+    else{
+      next=Object.assign({}, cur);
+      if(incR){
+        ['name','date','juchu','chaku','senshu','konshu','kyoyu'].forEach(k=>{ if(!next[k]&&incR[k]) next[k]=incR[k]; });
+        const curHasAmt=(cur.amounts||[]).some(a=>a&&(a.t||a.a));
+        if(!curHasAmt&&incR.amounts){ next.amounts=incR.amounts; next.mk=incR.mk; }
+        const have=new Set(curCases.map(caseKey));
+        next.cases=curCases.concat(incCases.filter(c=>!have.has(caseKey(c))));
+        ['soudans','questions'].forEach(k=>{
+          const a=(cur[k]||[]).filter(x=>x&&Object.values(x).some(Boolean));
+          if(!a.length&&incR[k]) next[k]=incR[k];
+        });
+      }
+    }
+    if(next) localStorage.setItem(KEY, JSON.stringify(next));
+    if(pack.name&&!localStorage.getItem(NKEY)) localStorage.setItem(NKEY, pack.name);
+    if(pack.yotei&&typeof pack.yotei==='object'){
+      let y={}; try{ y=JSON.parse(localStorage.getItem(YKEY)||'{}'); }catch(e){}
+      Object.keys(pack.yotei).forEach(k=>{ if(y[k]==null) y[k]=pack.yotei[k]; });
+      localStorage.setItem(YKEY, JSON.stringify(y));
+    }
+    localStorage.setItem('ekb_moved_in', new Date().toISOString());
+    clearHash();
+    const all=((next&&next.cases)||[]).filter(hasCaseBody);
+    return '✅ 引っ越し完了：案件 '+caseCountTxt(all)+' がこのボードに入りました。これからはこのボード（このページ）を使ってください。前のボードのデータも消えずに残っています。';
+  }catch(e){
+    clearHash();
+    alert('取り込みの途中で問題が起きました。前のボードのデータは消えていないので、専務に連絡してください。');
+    return '';
+  }
+}
+
 /* ---- 初期化 ---- */
+const _moveMsg=importMoveData();
 restore();
+if(_moveMsg){ const mm=$('#moveMsg'); mm.textContent=_moveMsg; mm.hidden=false; }
 if(!$('#r_date').value){
   const t=new Date();
   $('#r_date').value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
