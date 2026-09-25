@@ -34,15 +34,41 @@
   .num3 .col small{display:block;font-size:11px;color:var(--sub);margin-bottom:3px;text-align:center;}
   .case{border:1px dashed var(--line);border-radius:10px;padding:10px;margin-top:10px;background:#fafdff;}
   .case .lbl{font-size:11px;font-weight:700;color:var(--blue);margin-bottom:4px;}
-  .case.done{opacity:.55;}
-  .case.search-hide{display:none;}
-  .searchbar{position:relative;margin:2px 0 4px;}
+  #cases{display:flex;flex-direction:column;}
+  .case.done{background:#f5faf7;border-color:#cfe3d6;}
+  .case.hold{background:#f7f7fc;border-color:#c5c9e2;}
+  .case.hold.due{border:2px solid var(--warn);background:#fff6f5;}
+  .case.search-hide,.case.view-hide{display:none;}
+  .searchbar{position:relative;margin:8px 0 4px;}
   .searchbar input{padding-left:34px;}
   .searchbar .mag{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;}
   #caseSearchInfo{font-size:12px;margin-top:5px;min-height:15px;}
-  .done-toggle{color:var(--ok);font-size:12px;cursor:pointer;font-weight:600;float:right;margin-right:12px;}
-  .done-badge{display:none;background:var(--ok);color:#fff;font-size:10px;padding:1px 7px;border-radius:10px;margin-left:6px;font-weight:700;}
-  .case.done .done-badge{display:inline-block;}
+  /* 進行中／保留／完了の切り替え */
+  .viewbar{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 2px;}
+  .vbtn{flex:1;min-width:104px;border:1px solid var(--line);background:#fff;color:var(--sub);border-radius:9px;padding:9px 8px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .vbtn.on{background:var(--blue);border-color:var(--blue);color:#fff;}
+  .vbtn .due-cnt{display:inline-block;background:var(--warn);color:#fff;border-radius:10px;padding:0 7px;font-size:11px;margin-left:4px;}
+  #holdAlert{display:none;background:#fff6f5;border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:9px 12px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;}
+  .view-empty{text-align:center;color:var(--sub);font-size:13px;padding:18px 8px;border:1px dashed var(--line);border-radius:10px;margin-top:10px;}
+  /* 案件カードの操作ボタン（状態に合わせて出し分け） */
+  .c_acts{float:right;display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;}
+  .c_acts span{font-size:12px;cursor:pointer;font-weight:600;}
+  .c_acts .del{float:none;}
+  .act-hold{color:#555c8f;} .act-done{color:var(--ok);} .act-back{color:var(--navy);}
+  .case[data-state="active"] .act-back,
+  .case[data-state="hold"] .act-hold,
+  .case[data-state="done"] .act-hold,
+  .case[data-state="done"] .act-done{display:none;}
+  .st-badge{display:none;color:#fff;font-size:10px;padding:1px 7px;border-radius:10px;margin-left:6px;font-weight:700;}
+  .badge-done{background:var(--ok);} .badge-hold{background:#555c8f;}
+  .case.done .badge-done,.case.hold .badge-hold{display:inline-block;}
+  .c_donedate{font-size:11px;color:var(--sub);font-weight:600;margin-left:6px;}
+  .holdrow{display:none;background:#eef0fa;border-radius:8px;padding:4px 10px 8px;margin:6px 0 2px;}
+  .case.hold .holdrow{display:block;}
+  .holdrow .row{align-items:center;}
+  .holdrow input{max-width:190px;}
+  .due-msg{display:none;color:var(--warn);font-weight:700;font-size:12px;margin-top:6px;}
+  .case.due .due-msg{display:block;}
   .soudan{border:1px solid var(--gold);background:#fffaf0;border-radius:10px;padding:12px;margin-top:10px;position:relative;}
   .soudan .star{font-weight:800;color:var(--gold);font-size:13px;margin-bottom:6px;}
   .question{border:1px solid var(--blue);background:#f0f9ff;border-radius:10px;padding:12px;margin-top:10px;position:relative;}
@@ -131,13 +157,20 @@
 
   <div class="card">
     <h2>案件の進捗</h2>
-    <p class="hint">今週動いた案件を書く。件数は自由に追加。実績に集計されるのは「受注（決まった）／納車・施工待ち」だけなので、<b>商談中の見込み額も安心して書けます</b>（数字は汚れません）。板金・整備など粗利が出しにくい仕事は<b>工賃額を粗利に入れてOK</b>。書いた案件は<b>翌週も残ります</b>。終わった案件は各カードの「✓完了」で片付けてください（消さずに残せます）。</p>
+    <p class="hint">今週動いた案件を書く。件数は自由に追加。実績に集計されるのは「受注（決まった）／納車・施工待ち」だけなので、<b>商談中の見込み額も安心して書けます</b>（数字は汚れません）。板金・整備など粗利が出しにくい仕事は<b>工賃額を粗利に入れてOK</b>。書いた案件は<b>翌週も残ります</b>。終わった案件は「✓ 完了にする」で<b>完了</b>へ、長期・不確定の案件は「⏸ 保留へ」で<b>保留</b>へ移せます（どちらも消えずに残り、Webexの報告と集計には出ません）。</p>
+    <div class="viewbar no-print" id="caseViewbar">
+      <button type="button" class="vbtn on" data-view="active">📂 進行中 <span class="cnt"></span></button>
+      <button type="button" class="vbtn" data-view="hold">⏸ 保留 <span class="cnt"></span></button>
+      <button type="button" class="vbtn" data-view="done">✅ 完了 <span class="cnt"></span></button>
+    </div>
+    <div id="holdAlert" class="no-print"></div>
     <div class="searchbar no-print">
       <span class="mag">🔍</span>
       <input id="caseSearch" type="search" placeholder="お客さん名でさがす（例：晃伸製機）" autocomplete="off">
     </div>
     <div class="mini no-print" id="caseSearchInfo"></div>
     <div id="cases"></div>
+    <div class="view-empty no-print" id="viewEmpty" hidden></div>
     <span class="addlink" id="addCase">＋ 案件を追加</span>
   </div>
 
@@ -213,7 +246,8 @@
     <h2>運用ルール</h2>
     <ul>
       <li><b>数字：</b>金額はすべて<b>粗利・万円</b>で統一（売上を書きたいときは案件の内容欄にカッコ書き）。実績＝<b>今月</b>受注（決まった）した粗利の合計（先月受注ぶんは含めない）。商談中は見込み額でOK（集計には入らない）</li>
-      <li><b>案件の掃除：</b>納車・請求まで終わった先月の案件は、月が変わったら削除する（当月中は残してOK）。複数台まとめ書きの金額は「13+13」のように＋でつなげば合算されます</li>
+      <li><b>案件の片付け：</b>納車・請求まで終わった案件は「✓ 完了にする」で<b>完了</b>へ移す（消さなくてOK・完了の画面と検索でいつでも見られる）。先月受注ぶんは、月が変わったら完了へ。複数台まとめ書きの金額は「13+13」のように＋でつなげば合算されます</li>
+      <li><b>保留：</b>長期・不確定の案件は「⏸ 保留へ」で<b>保留</b>へ移す。「次に確認する日」（最初は1か月後）が来たらボードが⏰でお知らせ → 再アプローチして、確認日を延ばすか「↩ 進行中に戻す」</li>
       <li><b>予定（月目標）：</b>月初に専務がWebexで各自の予定粗利（万円）を配る → 各自が月1回入力（翌週からは自動で入る）</li>
       <li><b>提出：</b>会議前日（木）18:00までに、Webex「営業会議」スペースへ各自投稿</li>
       <li><b>読む：</b>参加者は会議前に全員ぶん目を通す（会議で読み上げない）</li>
@@ -300,10 +334,22 @@ function toast(msg){
 
 /* ---- 案件カード ---- */
 function caseHTML(i){
-  return `<div class="case" data-i="${i}">
-    <span class="del" onclick="this.parentNode.remove();save();render()">削除</span>
-    <span class="done-toggle" onclick="toggleDone(this)">✓ 完了にする</span>
-    <div class="lbl">案件 ${i+1}<span class="done-badge">完了・報告に出ません</span></div>
+  return `<div class="case" data-i="${i}" data-state="active">
+    <div class="c_acts">
+      <span class="act-hold" onclick="moveCase(this,'hold')">⏸ 保留へ</span>
+      <span class="act-done" onclick="moveCase(this,'done')">✓ 完了にする</span>
+      <span class="act-back" onclick="moveCase(this,'active')">↩ 進行中に戻す</span>
+      <span class="del" onclick="delCase(this)">削除</span>
+    </div>
+    <div class="lbl">案件 <span class="c_no">${i+1}</span><span class="st-badge badge-hold">保留中・報告に出ません</span><span class="st-badge badge-done">完了・報告に出ません</span><span class="c_donedate"></span></div>
+    <div class="holdrow">
+      <label>⏸ 次に確認する日（この日が来たらお知らせします）</label>
+      <div class="row">
+        <div style="flex:0 0 190px;"><input type="date" class="c_holdDate"></div>
+        <div><span class="addlink" style="margin:0 12px 0 0;" onclick="bumpHold(this,1)">今日から＋1か月</span><span class="addlink" style="margin:0;" onclick="bumpHold(this,3)">今日から＋3か月</span></div>
+      </div>
+      <div class="due-msg">⏰ 確認日です。再アプローチしたら「次の一手」を書き直して、確認日を延ばすか「↩ 進行中に戻す」を押してください。</div>
+    </div>
     <div class="row">
       <div><label>顧客</label><input class="c_kokyaku"></div>
       <div><label>区分</label><select class="c_kubun"><option>FL販売</option><option>レンタル</option><option>メンテ・点検</option><option>整備・修理</option><option>鈑金・塗装</option><option>リース</option><option>車両販売</option><option>保険</option><option>その他</option></select></div>
@@ -334,14 +380,120 @@ function questionHTML(i){
     <label>誰の何について（任意）</label><input class="q_ate" placeholder="例：勝村さんのA案件">
   </div>`;
 }
-function toggleDone(el){
-  const card=el.closest('.case'); if(!card)return;
-  const done=card.getAttribute('data-done')==='1';
-  card.setAttribute('data-done', done?'0':'1');
-  card.classList.toggle('done', !done);
-  el.textContent = done ? '✓ 完了にする' : '↩ 戻す';
-  save();
+/* ---- 案件の状態（進行中／保留／完了）と表示の切り替え ---- */
+let caseView='active';
+function ymd(t){ return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); }
+function todayStr(){ return ymd(new Date()); }
+function monthsLater(n){
+  // 今日からnか月後（月末日は丸める：1/31→2/28）
+  const t=new Date(), d=t.getDate();
+  t.setDate(1); t.setMonth(t.getMonth()+n);
+  t.setDate(Math.min(d, new Date(t.getFullYear(), t.getMonth()+1, 0).getDate()));
+  return ymd(t);
 }
+function mdTxt(s){ const p=(s||'').split('-'); return p.length===3?Number(p[1])+'/'+Number(p[2]):''; }
+function caseState(card){ return card.getAttribute('data-state')||'active'; }
+function setCaseState(card, st){
+  card.setAttribute('data-state', st);
+  card.classList.toggle('done', st==='done');
+  card.classList.toggle('hold', st==='hold');
+}
+function moveCase(el, st){
+  const card=el.closest('.case'); if(!card)return;
+  const hd=card.querySelector('.c_holdDate');
+  // 保留に入れるときは1か月後を初期値に／保留から出すときは確認日を消す（後で保留し直してもすぐ⏰にならない）
+  if(hd){ if(st==='hold'){ if(!hd.value||hd.value<=todayStr()) hd.value=monthsLater(1); } else hd.value=''; }
+  if(st==='done') card.setAttribute('data-donedate', todayStr()); else card.removeAttribute('data-donedate');
+  setCaseState(card, st);
+  save(); applyCaseView();
+  if(st==='hold') toast('保留に移しました（次の確認日 '+mdTxt(hd&&hd.value)+'）');
+  else if(st==='done') toast('完了に移しました（「✅ 完了」で見られます）');
+  else toast('進行中に戻しました');
+}
+function delCase(el){ const card=el.closest('.case'); if(card) card.remove(); save(); applyCaseView(); }
+function bumpHold(el, n){
+  const card=el.closest('.case'); if(!card)return;
+  card.querySelector('.c_holdDate').value=monthsLater(n);
+  save(); toast('次の確認日を '+mdTxt(card.querySelector('.c_holdDate').value)+' にしました');
+}
+function isDue(card){
+  if(caseState(card)!=='hold') return false;
+  const v=card.querySelector('.c_holdDate').value;
+  return !!v && v<=todayStr();
+}
+// 件数・⏰印・完了日の表示（入力のたびに呼ぶ。カードの出し入れはしない）
+function updateCaseBadges(){
+  const cnt={active:0, hold:0, done:0}; let due=0;
+  $$('#cases .case').forEach(c=>{
+    const st=caseState(c); cnt[st]++;
+    const d=isDue(c); c.classList.toggle('due', d); if(d) due++;
+    const dd=c.querySelector('.c_donedate'); const v=c.getAttribute('data-donedate');
+    if(dd) dd.textContent=(st==='done'&&v)?'完了日 '+mdTxt(v):'';
+  });
+  $$('#caseViewbar .vbtn').forEach(b=>{
+    const v=b.dataset.view;
+    b.querySelector('.cnt').innerHTML='('+cnt[v]+')'+(v==='hold'&&due?'<span class="due-cnt">⏰'+due+'</span>':'');
+  });
+  const al=$('#holdAlert');
+  if(al){
+    const searching=!!($('#caseSearch')&&$('#caseSearch').value.trim());
+    if(due && caseView!=='hold' && !searching){
+      al.innerHTML='⏰ 保留の案件のうち <u>'+due+'件</u> が確認日になりました。再アプローチの時期です → ここを押して保留を見る';
+      al.style.display='block';
+    }else{ al.style.display='none'; }
+  }
+}
+// 表示の切り替え（進行中／保留／完了・検索中は全部から探す）
+function applyCaseView(){
+  const inp=$('#caseSearch');
+  const q=normSearch(inp?inp.value:'');
+  const info=$('#caseSearchInfo');
+  const cards=[...$$('#cases .case')];
+  let hit=0;
+  cards.forEach(c=>{
+    let show;
+    if(q){
+      const target=normSearch(c.querySelector('.c_kokyaku').value)+'｜'+normSearch(c.querySelector('.c_shozai').value);
+      show=target.indexOf(q)>=0;
+    }else{
+      show=caseState(c)===caseView;
+    }
+    c.classList.toggle('view-hide', !show);
+    c.classList.remove('search-hide');
+    if(show) hit++;
+    // 並び順：保留は確認日が近い順／完了は新しい順（保存の順番は変えない＝見た目だけ）
+    c.style.order='';
+    if(!q && caseView==='hold'){ const v=c.querySelector('.c_holdDate').value; c.style.order=v?String(Number(v.replace(/-/g,''))-20000000):'999999'; }
+    if(!q && caseView==='done'){ const v=c.getAttribute('data-donedate'); c.style.order=v?String(99999999-Number(v.replace(/-/g,''))):'99999999'; }
+  });
+  // 見えている順に「案件 1,2,3…」を振り直す
+  cards.filter(c=>!c.classList.contains('view-hide'))
+    .sort((a,b)=>(Number(a.style.order)||0)-(Number(b.style.order)||0))
+    .forEach((c,i)=>{ const no=c.querySelector('.c_no'); if(no) no.textContent=i+1; });
+  $$('#caseViewbar .vbtn').forEach(b=>b.classList.toggle('on', !q && b.dataset.view===caseView));
+  const em=$('#viewEmpty');
+  if(em){
+    const msg={
+      active:'進行中の案件はありません。下の「＋ 案件を追加」で書けます。',
+      hold:'保留の案件はありません。長期・不確定の案件は、進行中のカードの「⏸ 保留へ」で移せます。',
+      done:'完了した案件はまだありません。終わった案件は「✓ 完了にする」でここに移ります。'
+    }[caseView];
+    em.textContent=msg; em.hidden=!!q || hit>0;
+  }
+  if(info){
+    if(!q){ info.textContent=''; }
+    else if(hit===0){ info.textContent='見つかりませんでした（進行中・保留・完了のすべてから探しています）。検索を空にすると元の画面に戻ります'; info.style.color='var(--warn)'; }
+    else{ info.textContent=hit+'件 見つかりました（進行中・保留・完了のすべてから・全'+cards.length+'件中）。検索を空にすると元の画面に戻ります'; info.style.color='var(--ok)'; }
+  }
+  updateCaseBadges();
+}
+function setCaseView(v){
+  caseView=v;
+  const cs=$('#caseSearch'); if(cs) cs.value='';
+  applyCaseView();
+}
+$$('#caseViewbar .vbtn').forEach(b=>b.onclick=()=>setCaseView(b.dataset.view));
+$('#holdAlert').onclick=()=>setCaseView('hold');
 
 /* ---- お客さん名の検索（案件カードの絞り込み・表示だけ／データは変えない） ---- */
 function normSearch(s){
@@ -352,27 +504,12 @@ function normSearch(s){
     .replace(/[\s　]/g,'')
     .replace(/[ぁ-ん]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60));
 }
-function applyCaseSearch(){
-  const inp=$('#caseSearch'); if(!inp)return;
-  const q=normSearch(inp.value);
-  const info=$('#caseSearchInfo');
-  let hit=0, total=0;
-  $$('#cases .case').forEach(c=>{
-    total++;
-    const target=normSearch(c.querySelector('.c_kokyaku').value)+'｜'+normSearch(c.querySelector('.c_shozai').value);
-    const show=!q||target.indexOf(q)>=0;
-    c.classList.toggle('search-hide',!show);
-    if(show)hit++;
-  });
-  if(!info)return;
-  if(!q){ info.textContent=''; }
-  else if(hit===0){ info.textContent='見つかりませんでした（完了にした案件も含めて探しています）。検索を空にすると全件表示に戻ります'; info.style.color='var(--warn)'; }
-  else{ info.textContent=hit+'件 見つかりました（全'+total+'件中・完了ぶんも含む）。検索を空にすると全件表示に戻ります'; info.style.color='var(--ok)'; }
-}
-$('#caseSearch').oninput=applyCaseSearch;
+$('#caseSearch').oninput=applyCaseView;
 $('#addCase').onclick=()=>{
-  const cs=$('#caseSearch'); if(cs&&cs.value){ cs.value=''; applyCaseSearch(); }
-  const n=$$('#cases .case').length; $('#cases').insertAdjacentHTML('beforeend',caseHTML(n)); bindInputs(); save();
+  // 新しい案件は「進行中」に入る（検索中・保留/完了を見ているときは進行中に戻して見せる）
+  const cs=$('#caseSearch'); if(cs) cs.value='';
+  caseView='active';
+  const n=$$('#cases .case').length; $('#cases').insertAdjacentHTML('beforeend',caseHTML(n)); bindInputs(); save(); applyCaseView();
 };
 $('#addSoudan').onclick=()=>{const n=$$('#soudans .soudan').length; $('#soudans').insertAdjacentHTML('beforeend',soudanHTML(n)); bindInputs(); save();};
 $('#addQuestion').onclick=()=>{const n=$$('#questions .question').length; $('#questions').insertAdjacentHTML('beforeend',questionHTML(n)); bindInputs(); save();};
@@ -387,7 +524,10 @@ function gather(){
     kingaku:c.querySelector('.c_kingaku').value.trim(),
     status:c.querySelector('.c_status').value,
     tsugi:c.querySelector('.c_tsugi').value.trim(),
-    done:c.getAttribute('data-done')==='1',
+    done:caseState(c)==='done',
+    hold:caseState(c)==='hold',
+    holdDate:(c.querySelector('.c_holdDate')||{value:''}).value,
+    doneDate:c.getAttribute('data-donedate')||'',
   })).filter(c=>c.kokyaku||c.shozai||c.kingaku||c.tsugi);
   const soudans=[...$$('#soudans .soudan')].map(s=>({
     tema:s.querySelector('.s_tema').value.trim(),
@@ -434,7 +574,7 @@ function updatePct(){
 }
 function fmtN(v){ const n=num(v); return isNaN(n)?'-':n.toLocaleString(); }
 function kimariCalc(cases){
-  const list=(cases||[]).filter(c=>!c.done&&(c.status==='決まった'||c.status==='納車・施工待ち'));
+  const list=(cases||[]).filter(c=>!c.done&&!c.hold&&(c.status==='決まった'||c.status==='納車・施工待ち'));
   const noAmt=list.filter(c=>isNaN(num(c.kingaku))).length;
   const sum=Math.round(list.reduce((s,c)=>{ const n=num(c.kingaku); return s+(isNaN(n)?0:n); },0)*10)/10;
   return {count:list.length, sum, noAmt};
@@ -521,7 +661,7 @@ function buildText(d){
   if(d.juchu) L.push('　今週の受注：'+d.juchu);
   if(d.chaku) L.push('　着地見込み：'+d.chaku);
   L.push('');
-  const activeCases=(d.cases||[]).filter(c=>!c.done);
+  const activeCases=(d.cases||[]).filter(c=>!c.done&&!c.hold);
   if(activeCases.length){
     L.push('■ 案件の進捗（金額＝粗利・万円）');
     activeCases.forEach((c,i)=>{
@@ -570,7 +710,7 @@ function save(){
 function render(){
   updatePct(); updateYen();
   const d=gather();
-  updateKimari(d); updateYoteiHint();
+  updateKimari(d); updateYoteiHint(); updateCaseBadges();
   $('#reportPreview').textContent = buildText(d);
 }
 function bindInputs(){
@@ -587,7 +727,7 @@ function restore(){
     const nm=localStorage.getItem(NKEY)||'';
     if(nm) $('#r_name').value=nm;
     $('#cases').innerHTML=caseHTML(0); $('#soudans').innerHTML=soudanHTML(0); $('#questions').innerHTML=questionHTML(0);
-    renderAmounts(nm); bindInputs(); render(); return;
+    renderAmounts(nm); bindInputs(); render(); applyCaseView(); return;
   }
   const d=JSON.parse(raw);
   $('#r_name').value=d.name||''; $('#r_date').value=d.date||'';
@@ -608,8 +748,15 @@ function restore(){
     el.querySelector('.c_kingaku').value=c.kingaku||'';
     if(c.status) el.querySelector('.c_status').value=c.status;
     el.querySelector('.c_tsugi').value=c.tsugi||'';
-    if(c.done){ el.setAttribute('data-done','1'); el.classList.add('done'); const dt=el.querySelector('.done-toggle'); if(dt)dt.textContent='↩ 戻す'; }
+    // 状態の復元（旧データの done:true はそのまま「完了」へ・hold が無ければ「進行中」）
+    if(c.holdDate) el.querySelector('.c_holdDate').value=c.holdDate;
+    if(c.done&&c.doneDate) el.setAttribute('data-donedate', c.doneDate);
+    setCaseState(el, c.done?'done':(c.hold?'hold':'active'));
   });
+  // 進行中が0件なら、書き始め用の空カードを1枚出す（空のままなら保存されない）
+  if(![...$$('#cases .case')].some(c=>caseState(c)==='active')){
+    $('#cases').insertAdjacentHTML('beforeend',caseHTML($$('#cases .case').length));
+  }
   $('#soudans').innerHTML = (d.soudans&&d.soudans.length?d.soudans:[{}]).map((s,i)=>soudanHTML(i)).join('');
   (d.soudans||[]).forEach((s,i)=>{const el=$$('#soudans .soudan')[i]; if(!el)return;
     el.querySelector('.s_tema').value=s.tema||''; el.querySelector('.s_kimetai').value=s.kimetai||''; el.querySelector('.s_an').value=s.an||'';
@@ -618,7 +765,7 @@ function restore(){
   (d.questions||[]).forEach((q,i)=>{const el=$$('#questions .question')[i]; if(!el)return;
     el.querySelector('.q_naiyo').value=q.naiyo||''; el.querySelector('.q_ate').value=q.ate||'';
   });
-  bindInputs(); render();
+  bindInputs(); render(); applyCaseView();
 }
 
 /* ---- ボタン ---- */
@@ -628,7 +775,14 @@ $('#copyReport').onclick=async()=>{
   catch(e){ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('コピーしました'); }
 };
 $('#printReport').onclick=()=>window.print();
-$('#clearReport').onclick=()=>{ if(confirm('入力をすべて消します（氏名と今月の予定は残ります）。よろしいですか？')){ localStorage.removeItem(KEY); location.reload(); } };
+$('#clearReport').onclick=()=>{
+  if(!confirm('入力をすべて消します（氏名・今月の予定・保留と完了の案件は残ります）。よろしいですか？')) return;
+  // 保留・完了の案件は何か月も持つ前提なので、クリアでは消さない（消すときは各カードの「削除」）
+  const kept=gather().cases.filter(c=>c.hold||c.done);
+  if(kept.length) localStorage.setItem(KEY, JSON.stringify({name:$('#r_name').value.trim(), cases:kept, soudans:[], questions:[], amounts:[], mk:monthKey()}));
+  else localStorage.removeItem(KEY);
+  location.reload();
+};
 
 /* ---- 月初の予定配布テンプレ ---- */
 $('#copyYoteiTpl').onclick=()=>{
